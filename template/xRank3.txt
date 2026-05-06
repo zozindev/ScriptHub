@@ -1,0 +1,16 @@
+    [
+        metatype = "rowrank",
+        grid$all$width = "100",
+        grid$small$width = "100",
+        grid$Extrasmall$width = "100",
+        row$all$center = false,
+        row$all$titlesize = "16",
+        row$small$titlesize = "14",
+        row$Extrasmall$titlesize = "14",
+        row$captype = "hard",
+        row$capvalue = "5",
+        row$uitype = "default",
+        row$all$txtpaddingtb = "15",
+        row$all$txtpaddinglr = "10",
+        customLoopTF = false
+    ]

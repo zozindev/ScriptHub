@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from modules.video_resizer import video_resizer_page
 from modules.image_bg_remover import image_bg_remover_page
+from modules.qlib_to_mdd import qlib_to_mdd_page
 from modules.info import info_page
 
 def main():
@@ -57,8 +58,8 @@ def main():
         st.write("---")
         selected = option_menu(
             menu_title=None,
-            options=["Service Guide", "BG Remover", "Video Resizer"],
-            icons=["info-circle", "scissors", "camera-reels"],
+            options=["Service Guide", "Qlib to mdd", "BG Remover", "Video Resizer"],
+            icons=["info-circle", "file-earmark-text", "scissors", "camera-reels"],
             menu_icon="cast",
             default_index=0,
             styles={
@@ -92,6 +93,8 @@ def main():
         image_bg_remover_page()
     elif selected == "Video Resizer":
         video_resizer_page()
+    elif selected == "Qlib to mdd":
+        qlib_to_mdd_page()
     elif selected == "Service Guide":
         info_page()
 

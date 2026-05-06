@@ -1,0 +1,7 @@
+loop
+{
+	use ORDER1
+} fields -
+(
+	slice ""
+	categorical [1..1]
