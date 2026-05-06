@@ -1,7 +1,7 @@
 import streamlit as st
 
 def info_page():
-    st.title("🚀 ScriptHub 가이드")
+    st.title("🚀 Service Guide")
     st.markdown("---")
 
     # 1. 앱 소개 섹션
@@ -17,7 +17,7 @@ def info_page():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 📹 동영상 리사이저")
+        st.markdown("#### 📹 Video Resizer")
         st.write("""
         - **일괄 변환**: 수십 개의 MP4 파일을 한 번에 업로드하여 원하는 해상도로 리사이징합니다.
         - **초고속 병렬 처리**: 3개의 파일을 동시에 변환하여 대기 시간을 대폭 단축했습니다.
@@ -26,7 +26,7 @@ def info_page():
         """)
 
     with col2:
-        st.markdown("#### ✂️ 이미지 배경 없애기")
+        st.markdown("#### ✂️ BG Remover")
         st.write("""
         - **흰색 배경 투명화**: 제품 사진이나 로고의 흰색/미색 배경을 픽셀 단위로 분석하여 완벽하게 제거합니다.
         - **동시 처리 최적화**: 8개 이미지를 병렬로 처리하여 수백 장의 이미지도 순식간에 작업합니다.

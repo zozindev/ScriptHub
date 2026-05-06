@@ -46,6 +46,9 @@ def main():
             padding: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
+        header {
+            visibility: hidden;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -54,7 +57,7 @@ def main():
         st.write("---")
         selected = option_menu(
             menu_title=None,
-            options=["소개", "이미지 배경 없애기", "동영상 리사이저"],
+            options=["Service Guide", "BG Remover", "Video Resizer"],
             icons=["info-circle", "scissors", "camera-reels"],
             menu_icon="cast",
             default_index=0,
@@ -85,11 +88,11 @@ def main():
         st.write("---")
         st.markdown("<p style='color: #868e96;'>v2.1.0 Optimized</p>", unsafe_allow_html=True)
 
-    if selected == "이미지 배경 없애기":
+    if selected == "BG Remover":
         image_bg_remover_page()
-    elif selected == "동영상 리사이저":
+    elif selected == "Video Resizer":
         video_resizer_page()
-    elif selected == "소개":
+    elif selected == "Service Guide":
         info_page()
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 
 def image_bg_remover_page():
-    st.title("✂️ 이미지 배경 없애기 (흰색 투명화)")
+    st.title("✂️ BG Remover (White Transparency)")
     st.markdown("---")
     
     with st.container():

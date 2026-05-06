@@ -17,7 +17,7 @@ def video_resizer_page():
         st.info(f"**상세 사유:** {reason}")
         return
 
-    st.title("📹 동영상 리사이저")
+    st.title("📹 Video Resizer")
     st.markdown("---")
     
     with st.container():
