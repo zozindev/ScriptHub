@@ -28,7 +28,7 @@ def video_resizer_page():
         with col2:
             st.markdown("#### 2. 설정")
             target_res = st.selectbox("목표 해상도", list(RESOLUTIONS.keys()), index=2)
-            st.info("💡 3개 파일씩 병렬로 빠르게 처리됩니다.")
+            #st.info("💡 3개 파일씩 병렬로 빠르게 처리됩니다.")
 
     st.markdown("---")
     

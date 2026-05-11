@@ -16,7 +16,7 @@ def image_bg_remover_page():
             type=["png", "jpg", "jpeg"], 
             accept_multiple_files=True
         )
-        st.info(f"💡 총 {len(uploaded_files) if uploaded_files else 0}개의 파일이 선택되었습니다.")
+        #st.info(f"💡 총 {len(uploaded_files) if uploaded_files else 0}개의 파일이 선택되었습니다.")
 
     st.markdown("---")
     

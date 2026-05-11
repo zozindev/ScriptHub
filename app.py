@@ -20,7 +20,7 @@ def main():
         selected = option_menu(
             menu_title=None,
             options=["info", "Dimensions Link", "BG Remover", "Video Resizer", "Image Resizer", "Script Converter", "MDD Generator", "HTML Validator", "Dimensions Qlib Optimizer", "Nfield Qlib Optimizer"],
-            icons=["info-circle", "scissors", "camera-reels", "image", "link-45deg", "magic", "code", "bug", "file-earmark-text", "terminal"],
+            icons=["info-circle", "link-45deg", "scissors", "camera-reels", "image", "magic", "code", "bug", "file-earmark-text", "terminal"],
             default_index=0,
             styles={
                 "nav-link-selected": {"background-color": "#007bff"}
