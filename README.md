@@ -20,6 +20,11 @@ ScriptHub는 반복적인 미디어 처리 작업을 자동화하고 최적화�
 - **xRank 및 Info 처리**: xRank 템플릿 적용 및 Info 태그 삽입 작업을 지능적으로 처리합니다.
 - **다중 인코딩 지원**: 다양한 파일 인코딩(UTF-8, UTF-16 등)을 지원하여 호환성을 높였습니다.
 
+### 🔗 Dimensions Link
+- **링크 생성 자동화**: Dimensions 설문 관련 각종 서버 주소(Scripting, Preview, Live)를 즉시 생성합니다.
+- **클러스터 지원**: 클러스터별 설정을 기반으로 최적화된 URL을 제공합니다.
+- **경로 생성**: 컴파일 위치, 데이터 익스트랙터 경로 및 FTP 주소를 일괄적으로 확인할 수 있습니다.
+
 ## 💎 핵심 강점
 - **정확한 로직**: 검증된 픽셀 분석 및 엔진을 사용합니다.
 - **병렬 최적화**: 멀티코어 CPU를 가동하여 압도적인 속도를 제공합니다.
@@ -42,9 +47,9 @@ ScriptHub는 반복적인 미디어 처리 작업을 자동화하고 최적화�
 
 3. 앱 실행:
    ```bash
-   streamlit run app.py
+   streamlit run ScriptHub/app.py
    ```
 
 ## 📝 버전 정보
-- **v2.1.0 Optimized**
+- **v2.2.0 Optimized** (Dimensions Link added)
 - Created for Productivity

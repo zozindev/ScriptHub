@@ -4,6 +4,7 @@ from modules.video_resizer import video_resizer_page
 from modules.image_bg_remover import image_bg_remover_page
 from modules.qlib_to_mdd import qlib_to_mdd_page
 from modules.info import info_page
+from modules.dimensions_link import dimensions_link_page
 
 def main():
     st.set_page_config(
@@ -47,9 +48,6 @@ def main():
             padding: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        header {
-            visibility: hidden;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -58,8 +56,8 @@ def main():
         st.write("---")
         selected = option_menu(
             menu_title=None,
-            options=["Service Guide", "Qlib to mdd", "BG Remover", "Video Resizer"],
-            icons=["info-circle", "file-earmark-text", "scissors", "camera-reels"],
+            options=["Service Guide", "Qlib to mdd", "Dimensions Link", "BG Remover", "Video Resizer"],
+            icons=["info-circle", "file-earmark-text", "link-45deg", "scissors", "camera-reels"],
             menu_icon="cast",
             default_index=0,
             styles={
@@ -95,6 +93,8 @@ def main():
         video_resizer_page()
     elif selected == "Qlib to mdd":
         qlib_to_mdd_page()
+    elif selected == "Dimensions Link":
+        dimensions_link_page()
     elif selected == "Service Guide":
         info_page()
 
