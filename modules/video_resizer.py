@@ -81,7 +81,9 @@ def video_resizer_page():
                     else:
                         error_msg = f"❌ 변환 실패: {uploaded_file.name} (Exit Code: {r.returncode})"
                         if r.stderr:
-                            error_msg += f"\nError: {r.stderr[:200]}..."
+                            # Show the last 500 characters of stderr for better debugging
+                            stderr_tail = r.stderr[-500:] if len(r.stderr) > 500 else r.stderr
+                            error_msg += f"\nError Detail:\n...{stderr_tail}"
                         return "failed", error_msg, None
                 except Exception as e:
                     return "failed", f"❌ 오류: {uploaded_file.name} ({str(e)})", None

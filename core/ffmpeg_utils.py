@@ -36,6 +36,10 @@ def run_cmd(cmd):
 
 @st.cache_resource
 def qsv_available():
+    # Streamlit Cloud (Linux) usually doesn't support QSV properly.
+    # Force disable QSV on non-Windows platforms.
+    if os.name != 'nt':
+        return False
     try:
         r = run_cmd(["ffmpeg", "-hide_banner", "-encoders"])
         return "h264_qsv" in r.stdout
