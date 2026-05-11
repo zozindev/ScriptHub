@@ -18,22 +18,21 @@ def main():
         st.markdown("<h1 style='color: #212529; font-size: 1.2rem;'>🚀 ScriptHub</h1>", unsafe_allow_html=True)
         selected = option_menu(
             menu_title=None,
-            options=["Service Guide", "Qlib to mdd", "Dimensions Link", "BG Remover", "Video Resizer", "Image Resizer", "Script Converter", "MDD Generator", "HTML Validator", "Nfield Optimizer"],
-            icons=["info-circle", "file-earmark-text", "link-45deg", "scissors", "camera-reels", "image", "magic", "code", "bug", "terminal"],
+            options=["Service Guide", "BG Remover", "Video Resizer", "Image Resizer", "Script Converter", "MDD Generator", "HTML Validator", "Dimensions Qlib Optimizer", "Nfield Qlib Optimizer"],
+            icons=["info-circle", "scissors", "camera-reels", "image", "magic", "code", "bug", "file-earmark-text", "terminal"],
             default_index=0
         )
 
     pages = {
         "Service Guide": info_page,
-        "Qlib to mdd": qlib_to_mdd_page,
-        "Dimensions Link": dimensions_link_page,
         "BG Remover": image_bg_remover_page,
         "Video Resizer": video_resizer_page,
         "Image Resizer": image_resizer_page,
         "Script Converter": script_converter_page,
         "MDD Generator": mdd_generator_page,
         "HTML Validator": html_validator_page,
-        "Nfield Optimizer": nfield_optimizer_page
+        "Dimensions Qlib Optimizer": qlib_to_mdd_page,
+        "Nfield Qlib Optimizer": nfield_optimizer_page
     }
     pages[selected]()
 

@@ -33,6 +33,25 @@ def info_page():
         - **고품질 유지**: 원본 이미지의 선명도를 그대로 유지하며 투명 채널(Alpha)을 추가합니다.
         - **미리보기 그리드**: 결과물을 5열 그리드로 나열하여 한눈에 검토할 수 있습니다.
         """)
+        
+    st.markdown("---")
+    
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown("#### 🖼️ Image Resizer")
+        st.write("""
+        - **비율 유지 리사이즈**: 가로 또는 세로 기준의 픽셀 값을 지정하여 비율을 100% 보존합니다.
+        - **개별/일괄 다운로드**: 처리된 모든 이미지의 ZIP 다운로드 및 개별 이미지 다운로드를 지원합니다.
+        """)
+    with col4:
+        st.markdown("#### 🪄 Script Tools (Converter, Generator, Validator, Optimizer)")
+        st.write("""
+        - **Script Converter**: 간단한 보기 목록을 Dimension/Nfield용 스크립트로 자동 변환합니다.
+        - **MDD Generator**: 엑셀 템플릿(ScriptCoded.xlsx)을 업로드하여 Dimension용 MDD 스크립트를 생성합니다.
+        - **HTML Validator**: 엑셀 내 텍스트의 HTML 태그 에러를 자동으로 찾아내어 리포트합니다.
+        - **Nfield Qlib Optimizer**: Nfield 스크립트의 UI 구조 및 태그를 최적화하여 정리합니다.
+        """)
+
 
     st.markdown("---")
 
