@@ -10,6 +10,7 @@ ENV/
 
 # Project specific
 explain.txt
+PROJECT_OVERVIEW.md
 
 # IDEs
 .vscode/
