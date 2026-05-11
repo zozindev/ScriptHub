@@ -79,7 +79,10 @@ def video_resizer_page():
                             data = f.read()
                         return "success", f"✅ 완료: {uploaded_file.name}", (out_filename, data)
                     else:
-                        return "failed", f"❌ 변환 실패: {uploaded_file.name}", None
+                        error_msg = f"❌ 변환 실패: {uploaded_file.name} (Exit Code: {r.returncode})"
+                        if r.stderr:
+                            error_msg += f"\nError: {r.stderr[:200]}..."
+                        return "failed", error_msg, None
                 except Exception as e:
                     return "failed", f"❌ 오류: {uploaded_file.name} ({str(e)})", None
 

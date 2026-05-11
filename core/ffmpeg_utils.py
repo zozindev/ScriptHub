@@ -24,7 +24,15 @@ def run_cmd(cmd):
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
-    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', startupinfo=startupinfo)
+    return subprocess.run(
+        cmd, 
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE, 
+        text=True, 
+        encoding='utf-8', 
+        errors='replace',
+        startupinfo=startupinfo
+    )
 
 @st.cache_resource
 def qsv_available():
