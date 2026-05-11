@@ -1,82 +1,24 @@
 import streamlit as st
 
 def info_page():
-    st.title("🚀 Service Guide")
+    st.title("ℹ️ info")
     st.markdown("---")
+    st.markdown("ScriptHub의 주요 기능들을 한눈에 확인하세요.")
 
-    # 1. 앱 소개 섹션
-    st.markdown("### 🌟 ScriptHub란?")
-    st.info("""
-        ScriptHub는 반복적이고 번거로운 미디어 처리 작업을 자동화하고 최적화하기 위해 설계된 도구 모음입니다.
-        모든 작업은 **브라우저 메모리 내에서 안전하게 처리**되며, 서버에 파일을 영구적으로 저장하지 않아 보안성이 뛰어납니다.
-    """)
+    features = {
+        "Dimensions Link": "Dimensions 설문 서버 주소 및 배포 경로를 생성합니다.",
+        "BG Remover": "제품 사진의 흰색 배경을 제거하고 투명 채널을 생성합니다.",
+        "Video Resizer": "다수의 동영상을 일괄적으로 원하는 해상도로 리사이징합니다.",
+        "Image Resizer": "이미지 비율을 유지하며 가로/세로 기준 일괄 리사이징합니다.",
+        "Script Converter": "보기 목록을 Dimension/Nfield용 스크립트로 자동 변환합니다.",
+        "MDD Generator": "엑셀 템플릿을 활용해 Dimension MDD 스크립트를 생성합니다.",
+        "HTML Validator": "엑셀 내 텍스트의 HTML 태그 문법 오류를 검사합니다.",
+        "Dimensions Qlib Optimizer": "Dimensions 스크립트의 UI 구조 및 태그를 최적화합니다.",
+        "Nfield Qlib Optimizer": "Nfield 스크립트의 UI 구조 및 태그를 최적화합니다."
+    }
 
-    st.markdown("---")
-
-    # 2. 주요 기능 섹션 (컬럼 레이아웃)
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("#### 📹 Video Resizer")
-        st.write("""
-        - **일괄 변환**: 수십 개의 MP4 파일을 한 번에 업로드하여 원하는 해상도로 리사이징합니다.
-        - **초고속 병렬 처리**: 3개의 파일을 동시에 변환하여 대기 시간을 대폭 단축했습니다.
-        - **스마트 필터**: 원본보다 큰 해상도로 변환되는 '업스케일'을 자동으로 방지하여 화질 저하를 막습니다.
-        - **하드웨어 가속**: 시스템의 성능을 감지하여 최적의 속도로 인코딩합니다.
-        """)
-
-    with col2:
-        st.markdown("#### ✂️ BG Remover")
-        st.write("""
-        - **흰색 배경 투명화**: 제품 사진이나 로고의 흰색/미색 배경을 픽셀 단위로 분석하여 완벽하게 제거합니다.
-        - **동시 처리 최적화**: 8개 이미지를 병렬로 처리하여 수백 장의 이미지도 순식간에 작업합니다.
-        - **고품질 유지**: 원본 이미지의 선명도를 그대로 유지하며 투명 채널(Alpha)을 추가합니다.
-        - **미리보기 그리드**: 결과물을 5열 그리드로 나열하여 한눈에 검토할 수 있습니다.
-        """)
-        
-    st.markdown("---")
-    
-    col3, col4 = st.columns(2)
-    with col3:
-        st.markdown("#### 🖼️ Image Resizer")
-        st.write("""
-        - **비율 유지 리사이즈**: 가로 또는 세로 기준의 픽셀 값을 지정하여 비율을 100% 보존합니다.
-        - **개별/일괄 다운로드**: 처리된 모든 이미지의 ZIP 다운로드 및 개별 이미지 다운로드를 지원합니다.
-        """)
-    with col4:
-        st.markdown("#### 🪄 Script Tools (Converter, Generator, Validator, Optimizer)")
-        st.write("""
-        - **Script Converter**: 간단한 보기 목록을 Dimension/Nfield용 스크립트로 자동 변환합니다.
-        - **MDD Generator**: 엑셀 템플릿(ScriptCoded.xlsx)을 업로드하여 Dimension용 MDD 스크립트를 생성합니다.
-        - **HTML Validator**: 엑셀 내 텍스트의 HTML 태그 에러를 자동으로 찾아내어 리포트합니다.
-        - **Nfield Qlib Optimizer**: Nfield 스크립트의 UI 구조 및 태그를 최적화하여 정리합니다.
-        """)
-
+    for name, desc in features.items():
+        st.markdown(f"**{name}**: {desc}")
 
     st.markdown("---")
-
-    # 3. 핵심 장점 섹션
-    st.markdown("### 💎 ScriptHub의 강점")
-    
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("🎯 **정확한 로직**")
-        st.caption("검증된 픽셀 분석 및 엔진을 사용하여 오류 없는 결과물을 보장합니다.")
-    with c2:
-        st.markdown("⚡ **병렬 최적화**")
-        st.caption("멀티코어 CPU를 가동하여 단순 작업 대비 압도적인 속도를 체감할 수 있습니다.")
-    with c3:
-        st.markdown("📂 **일괄 다운로드**")
-        st.caption("개별 파일은 물론, ZIP 압축 기능을 통해 여러 개의 결과물을 한 번에 내려받을 수 있습니다.")
-
-    st.markdown("---")
-
-    # 4. 사용 팁 섹션
-    with st.expander("💡 알아두면 좋은 팁"):
-        st.markdown("""
-        - **파일 업로드**: 드래그 앤 드롭으로 파일을 한 번에 여러 개 끌어다 놓을 수 있습니다.
-        - **로컬 저장**: 서버 디렉토리를 설정할 필요가 없습니다. 모든 결과물은 다운로드 버튼을 통해 내 컴퓨터로 바로 저장됩니다.
-        - **속도 향상**: 대량 작업 시 브라우저 탭을 열어두고 다른 업무를 보셔도 병렬 처리가 차질 없이 진행됩니다.
-        """)
-
-    st.caption("v2.1.0 Optimized | Created for Productivity")
+    st.caption("v2.2.0 | Productivity Tools")

@@ -24,7 +24,8 @@ def get_rich_styled_text(cell):
     return text
 
 def mdd_generator_page():
-    st.title("🪄 설문지 코드화 (Dimension)")
+    st.title("📋 설문지 코드화 (Dimension)")
+    st.markdown("---")
     uploaded_survey = st.file_uploader("ScriptCoded.xlsx 업로드", type=["xlsx"])
     
     if uploaded_survey and st.button("MDD 스크립트 생성"):

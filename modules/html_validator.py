@@ -21,6 +21,7 @@ def is_html_error(html_content):
 
 def html_validator_page():
     st.title("🪄 HTML 태그 에러 검출기")
+    st.markdown("---")
     uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx"])
     if uploaded_file and st.button("검사 및 리스트 생성"):
         output = BytesIO()

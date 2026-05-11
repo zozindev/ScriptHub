@@ -223,16 +223,10 @@ xRank_type - 1] and xRank_type > 1:
 
 # Streamlit 페이지 로직 (AutoQlib.py의 파일 읽기 로직을 적용)
 def qlib_to_mdd_page():
-    st.title("📑 Qlib to mdd (AutoQlib 기능 통합)")
+    st.title("📑 Dimensions Qlib 정리")
     st.markdown("---")
-    
-    st.info("""
-        **Qlib to mdd** 도구는 AutoQlib.py의 파일 처리 로직을 기반으로, 
-        설문 스크립트 등 텍스트 파일의 변환 작업을 수행합니다. 
-        다양한 인코딩을 지원하며, xRank 템플릿 적용, Info 태그 삽입 등의 작업을 자동화합니다.
-    """)
 
-    uploaded_file = st.file_uploader("수정할 텍스트 파일을 업로드하세요", type=["txt"])
+    uploaded_file = st.file_uploader("Dimensions metadata txt 파일 업로드", type=["txt"])
 
     if uploaded_file is not None:
         content_str = None # 최종적으로 처리할 문자열
