@@ -18,7 +18,9 @@ import string # string 모듈 import
 
 # 파일에서 템플릿을 읽어와서 리스트에 추가하는 함수 (AutoQlib.py와 동일한 인코딩 시도 로직 적용)
 def xRank_template(xRank, lines):
-    template_path = Path("ScriptHub/template") / f"{xRank}.txt"
+    # 현재 파일의 위치를 기준으로 프로젝트 루트를 찾고, 템플릿 폴더를 지정합니다.
+    module_dir = Path(__file__).resolve().parent.parent
+    template_path = module_dir / "template" / f"{xRank}.txt"
     
     # AutoQlib.py와 동일한 인코딩 시도 목록 사용
     encodings_to_try = ['utf-8', 'utf-16', 'cp1252', 'latin1']
