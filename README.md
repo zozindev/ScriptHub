@@ -10,6 +10,7 @@ ScriptHub는 반복적인 미디어 처리 및 데이터 변환 작업을 자동
 - **Image Resizer**: 이미지 비율을 유지하며 가로/세로 기준 일괄 리사이징합니다.
 
 ### 📑 데이터 및 스크립트 도구
+- **Excel Updater**: Excel 데이터를 업데이트하고, 시트 복구 및 증감표를 자동 생성합니다.
 - **Dimensions Link**: Dimensions 설문 서버 주소 및 배포 경로를 생성합니다.
 - **Script Converter**: 보기 목록을 Dimension/Nfield용 스크립트로 자동 변환합니다.
 - **MDD Generator**: 엑셀 템플릿을 활용해 Dimension MDD 스크립트를 생성합니다.
