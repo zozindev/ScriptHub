@@ -225,9 +225,6 @@ xRank_type - 1] and xRank_type > 1:
 
 # Streamlit 페이지 로직 (AutoQlib.py의 파일 읽기 로직을 적용)
 def qlib_to_mdd_page():
-    st.title("📑 Dimensions Qlib 정리")
-    st.markdown("---")
-
     uploaded_file = st.file_uploader("Dimensions metadata txt 파일 업로드", type=["txt"])
 
     if uploaded_file is not None:

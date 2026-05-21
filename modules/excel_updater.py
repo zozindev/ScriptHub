@@ -265,10 +265,6 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
     return error_pivots
 
 def excel_updater_page():
-    st.title("📊 Excel 데이터 업데이트")
-    st.markdown("""
-    이전 데이터와 최신 데이터를 업로드하여 **Data 시트 갱신, del 시트 복구, 피벗 테이블 새로고침 및 증감표 생성** 작업을 자동으로 수행합니다.
-    """)
     col1, col2 = st.columns(2)
     with col1: old_file = st.file_uploader("**이전 데이터**", type=["xlsm", "xlsx"], key="old_excel")
     with col2: new_file = st.file_uploader("**최신 데이터**", type=["xlsm", "xlsx"], key="new_excel")

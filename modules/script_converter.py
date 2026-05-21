@@ -18,10 +18,6 @@ def copy_to_clipboard_js(text):
     html(copy_js, height=60)
 
 def script_converter_page():
-    st.title("🪄 Script Converter")
-    st.markdown("---")
-    
-
     st.markdown("보기 목록을 붙여넣으세요. (엔터 구분)")
     input_text = st.text_area("보기 목록 입력", height=200, label_visibility="collapsed")
     

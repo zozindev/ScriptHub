@@ -1,10 +1,6 @@
 import streamlit as st
 
 def info_page():
-    st.title("ℹ️ info")
-    st.markdown("---")
-    st.markdown("ScriptHub의 주요 기능들을 한눈에 확인하세요.")
-
     features = {
         "Dimensions Link": "Dimensions 설문 서버 주소 및 배포 경로를 생성합니다.",
         "BG Remover": "제품 사진의 흰색 배경을 제거하고 투명 채널을 생성합니다.",

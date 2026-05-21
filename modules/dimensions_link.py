@@ -1,9 +1,6 @@
 import streamlit as st
 
 def dimensions_link_page():
-    st.title("🔗 Dimensions Links")
-    st.markdown("---")
-
     # Input Fields
     with st.container():
         col1, col2, col3 = st.columns(3)

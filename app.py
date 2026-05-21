@@ -1,6 +1,6 @@
 import json
-import time
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 import extra_streamlit_components as stx
 import streamlit as st
@@ -19,24 +19,232 @@ from modules.video_resizer import video_resizer_page
 
 
 ALL_MENU_DATA = [
-    {"label": "info", "icon": "info-circle", "func": info_page},
-    {"label": "Dimensions Link", "icon": "link-45deg", "func": dimensions_link_page},
-    {"label": "BG Remover", "icon": "scissors", "func": image_bg_remover_page},
-    {"label": "Video Resizer", "icon": "camera-reels", "func": video_resizer_page},
-    {"label": "Image Resizer", "icon": "image", "func": image_resizer_page},
-    {"label": "Script Converter", "icon": "magic", "func": script_converter_page},
-    {"label": "MDD Generator", "icon": "code", "func": mdd_generator_page},
-    {"label": "HTML Validator", "icon": "bug", "func": html_validator_page},
-    {"label": "Dimensions Qlib Optimizer", "icon": "file-earmark-text", "func": qlib_to_mdd_page},
-    {"label": "Nfield Qlib Optimizer", "icon": "terminal", "func": nfield_optimizer_page},
-    {"label": "Excel Updater", "icon": "file-earmark-spreadsheet", "func": excel_updater_page},
+    {
+        "label": "info",
+        "icon": "info-circle",
+        "func": info_page,
+        "title": "Info",
+        "description": "ScriptHub의 도구 구성과 사용 흐름을 확인합니다.",
+        "category": "Overview",
+    },
+    {
+        "label": "Dimensions Link",
+        "icon": "link-45deg",
+        "func": dimensions_link_page,
+        "title": "Dimensions Link",
+        "description": "Dimensions 서버 주소와 배포 경로를 빠르게 생성합니다.",
+        "category": "Script Tools",
+    },
+    {
+        "label": "BG Remover",
+        "icon": "scissors",
+        "func": image_bg_remover_page,
+        "title": "BG Remover",
+        "description": "흰색 배경을 투명 처리한 PNG 결과물을 만듭니다.",
+        "category": "Media",
+    },
+    {
+        "label": "Video Resizer",
+        "icon": "camera-reels",
+        "func": video_resizer_page,
+        "title": "Video Resizer",
+        "description": "여러 MP4 파일을 지정한 해상도로 일괄 변환합니다.",
+        "category": "Media",
+    },
+    {
+        "label": "Image Resizer",
+        "icon": "image",
+        "func": image_resizer_page,
+        "title": "Image Resizer",
+        "description": "이미지 비율을 유지하며 기준 픽셀에 맞춰 일괄 리사이즈합니다.",
+        "category": "Media",
+    },
+    {
+        "label": "Script Converter",
+        "icon": "magic",
+        "func": script_converter_page,
+        "title": "Script Converter",
+        "description": "보기 목록을 Dimensions/Nfield 코드 형식으로 변환합니다.",
+        "category": "Script Tools",
+    },
+    {
+        "label": "MDD Generator",
+        "icon": "code",
+        "func": mdd_generator_page,
+        "title": "MDD Generator",
+        "description": "정리된 설문 구조를 Dimensions MDD 스크립트로 생성합니다.",
+        "category": "Script Tools",
+    },
+    {
+        "label": "HTML Validator",
+        "icon": "bug",
+        "func": html_validator_page,
+        "title": "HTML Validator",
+        "description": "엑셀 텍스트 안의 HTML 태그 오류를 점검합니다.",
+        "category": "Validation",
+    },
+    {
+        "label": "Dimensions Qlib Optimizer",
+        "icon": "file-earmark-text",
+        "func": qlib_to_mdd_page,
+        "title": "Dimensions Qlib Optimizer",
+        "description": "Dimensions 메타데이터 스크립트를 정리하고 MDD 변환을 돕습니다.",
+        "category": "Script Tools",
+    },
+    {
+        "label": "Nfield Qlib Optimizer",
+        "icon": "terminal",
+        "func": nfield_optimizer_page,
+        "title": "Nfield Qlib Optimizer",
+        "description": "Nfield Qlib 텍스트를 정리된 스크립트 형태로 다듬습니다.",
+        "category": "Script Tools",
+    },
+    {
+        "label": "Excel Updater",
+        "icon": "file-earmark-spreadsheet",
+        "func": excel_updater_page,
+        "title": "Excel Updater",
+        "description": "이전 데이터와 최신 데이터를 비교해 업데이트 파일을 생성합니다.",
+        "category": "Data",
+    },
 ]
 
 MENU_LABELS = [menu["label"] for menu in ALL_MENU_DATA]
+ALL_MENU_MODE = "모든 메뉴"
+FAVORITE_MENU_MODE = "즐겨찾기"
+MENU_MODE_OPTIONS = [ALL_MENU_MODE, FAVORITE_MENU_MODE]
 FAVORITES_COOKIE_NAME = "scripthub_favorites"
 LEGACY_FAVORITES_COOKIE_NAME = "favorites"
 FAVORITES_COOKIE_DAYS = 365
-COOKIE_LOAD_RETRIES = 2
+
+
+def _inject_app_styles():
+    st.markdown(
+        """
+        <style>
+            :root {
+                --sh-accent: #2563eb;
+                --sh-accent-hover: #1d4ed8;
+                --sh-border: #d9e2ef;
+                --sh-muted: #64748b;
+                --sh-surface: #f8fafc;
+            }
+
+            div[data-testid="stSidebar"] {
+                border-right: 1px solid var(--sh-border);
+            }
+
+            div[data-testid="stSidebar"] h1 {
+                margin-bottom: 0.6rem;
+                letter-spacing: 0;
+            }
+
+            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] {
+                margin-bottom: 0.35rem;
+            }
+
+            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] button {
+                border-radius: 6px;
+                min-height: 2.2rem;
+                font-weight: 650;
+                letter-spacing: 0;
+            }
+
+            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+                border-color: var(--sh-accent);
+                background: var(--sh-accent);
+                color: #ffffff;
+            }
+
+            div[data-testid="stSidebar"] .stButton > button {
+                min-height: 2.25rem;
+                justify-content: flex-start;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+
+            div[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+                border-color: var(--sh-accent);
+                background: var(--sh-accent);
+            }
+
+            div[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+                border-color: var(--sh-accent-hover);
+                background: var(--sh-accent-hover);
+            }
+
+            .sh-page-header {
+                margin: 0.25rem 0 1.25rem;
+                padding: 1rem 0 1.05rem;
+                border-bottom: 1px solid var(--sh-border);
+            }
+
+            .sh-page-header__meta {
+                color: var(--sh-muted);
+                font-size: 0.78rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                line-height: 1.2;
+                margin-bottom: 0.35rem;
+                text-transform: uppercase;
+            }
+
+            .sh-page-header__title {
+                color: #0f172a;
+                font-size: 2rem;
+                font-weight: 750;
+                letter-spacing: 0;
+                line-height: 1.15;
+                margin: 0;
+            }
+
+            .sh-page-header__description {
+                color: #475569;
+                font-size: 0.98rem;
+                line-height: 1.55;
+                margin-top: 0.35rem;
+                max-width: 54rem;
+            }
+
+            section.main .stButton > button,
+            section.main .stDownloadButton > button,
+            div[data-testid="stFormSubmitButton"] > button {
+                border-radius: 6px;
+                min-height: 2.4rem;
+                font-weight: 650;
+                letter-spacing: 0;
+            }
+
+            section.main .stButton > button[kind="primary"],
+            section.main .stDownloadButton > button[kind="primary"],
+            div[data-testid="stFormSubmitButton"] > button[kind="primary"] {
+                border-color: var(--sh-accent);
+                background: var(--sh-accent);
+            }
+
+            section.main .stButton > button[kind="primary"]:hover,
+            section.main .stDownloadButton > button[kind="primary"]:hover,
+            div[data-testid="stFormSubmitButton"] > button[kind="primary"]:hover {
+                border-color: var(--sh-accent-hover);
+                background: var(--sh-accent-hover);
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_page_header(menu):
+    st.markdown(
+        f"""
+        <div class="sh-page-header">
+            <div class="sh-page-header__meta">{menu["category"]}</div>
+            <div class="sh-page-header__title">{menu["title"]}</div>
+            <div class="sh-page-header__description">{menu["description"]}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _clean_favorites(raw_favorites):
@@ -51,6 +259,11 @@ def _clean_favorites(raw_favorites):
 
 
 def _get_saved_favorites(cookie_manager):
+    context_cookies = st.context.cookies.to_dict()
+    saved = context_cookies.get(FAVORITES_COOKIE_NAME) or context_cookies.get(LEGACY_FAVORITES_COOKIE_NAME)
+    if saved is not None:
+        return saved
+
     saved = cookie_manager.get(FAVORITES_COOKIE_NAME) or cookie_manager.get(LEGACY_FAVORITES_COOKIE_NAME)
     if saved is None:
         return None
@@ -61,19 +274,64 @@ def _load_favorites(saved):
     if not saved:
         return []
 
-    try:
-        return _clean_favorites(json.loads(saved))
-    except (TypeError, ValueError, json.JSONDecodeError):
-        return []
+    candidates = [saved]
+    decoded_saved = unquote(saved)
+    if decoded_saved != saved:
+        candidates.append(decoded_saved)
+
+    for candidate in candidates:
+        try:
+            return _clean_favorites(json.loads(candidate))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+    return []
 
 
-def _save_favorites(cookie_manager):
+def _save_favorites(cookie_manager, force=False):
     st.session_state.favorites = _clean_favorites(st.session_state.favorites)
+    favorites_json = json.dumps(st.session_state.favorites, ensure_ascii=False)
+    if not force and st.session_state.get("last_saved_favorites") == favorites_json:
+        return
+
+    st.session_state.favorite_save_count += 1
     cookie_manager.set(
         FAVORITES_COOKIE_NAME,
-        json.dumps(st.session_state.favorites, ensure_ascii=False),
+        favorites_json,
+        key=f"set_favorites_{st.session_state.favorite_save_count}",
         expires_at=datetime.now() + timedelta(days=FAVORITES_COOKIE_DAYS),
+        max_age=FAVORITES_COOKIE_DAYS * 24 * 60 * 60,
+        same_site="lax",
     )
+    st.session_state.last_saved_favorites = favorites_json
+
+
+def _mark_favorites_dirty():
+    st.session_state.favorites = _clean_favorites(st.session_state.favorites)
+    st.session_state.favorites_dirty = True
+
+
+def _move_favorite(label, offset):
+    if label not in st.session_state.favorites:
+        return
+
+    current_index = st.session_state.favorites.index(label)
+    target_index = current_index + offset
+    if target_index < 0 or target_index >= len(st.session_state.favorites):
+        return
+
+    st.session_state.favorites[current_index], st.session_state.favorites[target_index] = (
+        st.session_state.favorites[target_index],
+        st.session_state.favorites[current_index],
+    )
+    _mark_favorites_dirty()
+
+
+def _toggle_favorite(label):
+    if label in st.session_state.favorites:
+        st.session_state.favorites.remove(label)
+    else:
+        st.session_state.favorites.append(label)
+    _mark_favorites_dirty()
 
 
 def _render_menu_buttons(menu_items, key_prefix):
@@ -113,23 +371,23 @@ def _render_favorite_order_editor(cookie_manager):
         col_up, col_down, col_label = st.columns([0.16, 0.16, 0.68])
 
         with col_up:
-            if st.button("↑", key=f"fav_up_{label}", disabled=index == 0):
-                st.session_state.favorites[index - 1], st.session_state.favorites[index] = (
-                    st.session_state.favorites[index],
-                    st.session_state.favorites[index - 1],
-                )
-                _save_favorites(cookie_manager)
-                st.rerun()
+            st.button(
+                "↑",
+                key=f"fav_up_{label}",
+                disabled=index == 0,
+                on_click=_move_favorite,
+                args=(label, -1),
+            )
 
         with col_down:
             is_last = index == len(st.session_state.favorites) - 1
-            if st.button("↓", key=f"fav_down_{label}", disabled=is_last):
-                st.session_state.favorites[index + 1], st.session_state.favorites[index] = (
-                    st.session_state.favorites[index],
-                    st.session_state.favorites[index + 1],
-                )
-                _save_favorites(cookie_manager)
-                st.rerun()
+            st.button(
+                "↓",
+                key=f"fav_down_{label}",
+                disabled=is_last,
+                on_click=_move_favorite,
+                args=(label, 1),
+            )
 
         with col_label:
             st.write(label)
@@ -144,13 +402,12 @@ def _render_favorite_toggle_editor(cookie_manager):
         col_star, col_label = st.columns([0.16, 0.84])
 
         with col_star:
-            if st.button("★" if is_favorite else "☆", key=f"fav_toggle_{label}"):
-                if is_favorite:
-                    st.session_state.favorites.remove(label)
-                else:
-                    st.session_state.favorites.append(label)
-                _save_favorites(cookie_manager)
-                st.rerun()
+            st.button(
+                "★" if is_favorite else "☆",
+                key=f"fav_toggle_{label}",
+                on_click=_toggle_favorite,
+                args=(label,),
+            )
 
         with col_label:
             st.write(label)
@@ -177,38 +434,44 @@ def _init_session_state():
         st.session_state.selected_menu = "info"
     if "init_done" not in st.session_state:
         st.session_state.init_done = False
-    if "cookie_load_retries" not in st.session_state:
-        st.session_state.cookie_load_retries = 0
+    if "favorite_save_count" not in st.session_state:
+        st.session_state.favorite_save_count = 0
+    if "favorites_dirty" not in st.session_state:
+        st.session_state.favorites_dirty = False
+    if "last_saved_favorites" not in st.session_state:
+        st.session_state.last_saved_favorites = None
 
 
 def main():
     st.set_page_config(page_title="ScriptHub", page_icon="📚", layout="wide")
+    _inject_app_styles()
     _init_session_state()
 
     cookie_manager = stx.CookieManager(key="scripthub_cookie_manager")
 
     saved_favorites = _get_saved_favorites(cookie_manager)
-    if not st.session_state.init_done and saved_favorites is None:
-        if st.session_state.cookie_load_retries < COOKIE_LOAD_RETRIES:
-            st.session_state.cookie_load_retries += 1
-            time.sleep(0.2)
-            st.rerun()
-
     if not st.session_state.init_done:
         st.session_state.favorites = _load_favorites(saved_favorites)
         st.session_state.init_done = True
 
+    if st.session_state.init_done:
+        _save_favorites(cookie_manager, force=st.session_state.favorites_dirty)
+        st.session_state.favorites_dirty = False
+
     with st.sidebar:
         st.markdown("<h1 style='font-size: 2rem;'>ScriptHub</h1>", unsafe_allow_html=True)
-        view_mode = st.radio(
+        st.caption("메뉴 모드")
+        view_mode = st.segmented_control(
             "메뉴 모드",
-            ["모든 메뉴 모드", "즐겨찾기 모드"],
-            horizontal=True,
-            key="menu_view_mode",
+            MENU_MODE_OPTIONS,
+            default=ALL_MENU_MODE,
+            key="menu_view_segment",
+            label_visibility="collapsed",
+            width="stretch",
         )
         st.divider()
 
-        if view_mode == "모든 메뉴 모드":
+        if view_mode == ALL_MENU_MODE:
             st.session_state.edit_mode = False
             _render_all_menus()
         elif st.session_state.edit_mode:
@@ -221,8 +484,9 @@ def main():
                 st.rerun()
 
     final_label = st.session_state.selected_menu
-    page_func = next((menu["func"] for menu in ALL_MENU_DATA if menu["label"] == final_label), info_page)
-    page_func()
+    selected_menu = next((menu for menu in ALL_MENU_DATA if menu["label"] == final_label), ALL_MENU_DATA[0])
+    _render_page_header(selected_menu)
+    selected_menu["func"]()
 
 
 if __name__ == "__main__":

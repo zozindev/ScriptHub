@@ -5,10 +5,6 @@ import zipfile
 from io import BytesIO
 
 def image_resizer_page():
-    st.title("🖼️ Image Resizer")
-    st.markdown("이미지 비율을 유지하며 가로 또는 세로 기준으로 리사이즈합니다.")
-    st.markdown("---")
-
     uploaded_files = st.file_uploader("이미지 파일 선택", accept_multiple_files=True, type=['jpg', 'jpeg', 'png', 'bmp', 'webp'])
     
     col1, col2 = st.columns(2)

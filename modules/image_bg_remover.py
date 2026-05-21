@@ -6,9 +6,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 
 def image_bg_remover_page():
-    st.title("✂️ BG Remover (White Transparency)")
-    st.markdown("---")
-    
     with st.container():
         st.markdown("#### 1. 이미지 업로드")
         uploaded_files = st.file_uploader(

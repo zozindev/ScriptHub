@@ -2,8 +2,6 @@ import streamlit as st
 import re
 
 def nfield_optimizer_page():
-    st.title("📑 Nfield Qlib 정리")
-    st.markdown("---")
     uploaded_txt = st.file_uploader("Nfield 텍스트/Q 파일 업로드", type=["txt", "q"])
     
     if uploaded_txt and st.button("파일 정리"):
