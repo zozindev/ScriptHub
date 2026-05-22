@@ -122,111 +122,178 @@ def _inject_app_styles():
     st.markdown(
         """
         <style>
+            @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+            
             :root {
-                --sh-accent: #2563eb;
-                --sh-accent-hover: #1d4ed8;
-                --sh-border: #d9e2ef;
-                --sh-muted: #64748b;
-                --sh-surface: #f8fafc;
+                --sh-primary: #2563eb;
+                --sh-primary-hover: #1d4ed8;
+                --sh-bg-sidebar: #f8fafc;
+                --sh-bg-main: #ffffff;
+                --sh-text-main: #0f172a;
+                --sh-text-muted: #64748b;
+                --sh-border: #e2e8f0;
+                --sh-card-bg: #ffffff;
+                --sh-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
             }
 
+            html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], .stMarkdown {
+                font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            }
+
+            /* 폰트가 아이콘을 덮어쓰지 않도록 예외 처리 */
+            .stIcon, [data-testid="stIcon"], .material-icons {
+                font-family: inherit !important;
+            }
+
+            /* Code Block (Copy Card) Styling */
+            div[data-testid="stCodeBlock"] {
+                border-radius: 8px !important;
+                border: 1px solid var(--sh-border) !important;
+                background-color: #f8fafc !important;
+                margin-bottom: 1rem !important;
+            }
+
+            div[data-testid="stCodeBlock"] code {
+                white-space: pre-wrap !important;
+                word-break: break-all !important;
+                font-size: 0.85rem !important;
+                color: #1e293b !important;
+                background-color: transparent !important;
+                padding: 1rem !important;
+            }
+
+            /* Sidebar Styling */
             div[data-testid="stSidebar"] {
+                background-color: var(--sh-bg-sidebar);
                 border-right: 1px solid var(--sh-border);
             }
 
             div[data-testid="stSidebar"] h1 {
-                margin-bottom: 0.6rem;
-                letter-spacing: 0;
-            }
-
-            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] {
-                margin-bottom: 0.35rem;
-            }
-
-            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] button {
-                border-radius: 6px;
-                min-height: 2.2rem;
-                font-weight: 650;
-                letter-spacing: 0;
-            }
-
-            div[data-testid="stSidebar"] div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {
-                border-color: var(--sh-accent);
-                background: var(--sh-accent);
-                color: #ffffff;
+                font-size: 1.5rem !important;
+                font-weight: 800 !important;
+                color: var(--sh-primary);
+                margin-bottom: 1.5rem !important;
+                padding-left: 0.5rem;
             }
 
             div[data-testid="stSidebar"] .stButton > button {
-                min-height: 2.25rem;
-                justify-content: flex-start;
-                border-radius: 6px;
+                border: none;
+                background-color: transparent;
+                text-align: left;
+                padding: 0.6rem 0.75rem;
                 font-weight: 500;
+                color: #475569;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+
+            div[data-testid="stSidebar"] .stButton > button:hover {
+                background-color: #f1f5f9;
+                color: var(--sh-primary);
             }
 
             div[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-                border-color: var(--sh-accent);
-                background: var(--sh-accent);
+                background-color: #eff6ff;
+                color: var(--sh-primary);
+                font-weight: 600;
             }
 
-            div[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-                border-color: var(--sh-accent-hover);
-                background: var(--sh-accent-hover);
-            }
-
+            /* Header Styling */
             .sh-page-header {
-                margin: 0.25rem 0 1.25rem;
-                padding: 1rem 0 1.05rem;
+                padding-bottom: 1.5rem;
+                margin-bottom: 2rem;
                 border-bottom: 1px solid var(--sh-border);
             }
 
             .sh-page-header__meta {
-                color: var(--sh-muted);
-                font-size: 0.78rem;
-                font-weight: 700;
-                letter-spacing: 0.08em;
-                line-height: 1.2;
-                margin-bottom: 0.35rem;
+                display: inline-block;
+                background-color: #f1f5f9;
+                color: #475569;
+                font-size: 0.75rem;
+                font-weight: 600;
+                padding: 0.2rem 0.6rem;
+                border-radius: 4px;
+                margin-bottom: 0.75rem;
                 text-transform: uppercase;
+                letter-spacing: 0.025em;
             }
 
             .sh-page-header__title {
-                color: #0f172a;
-                font-size: 2rem;
-                font-weight: 750;
-                letter-spacing: 0;
-                line-height: 1.15;
+                font-size: 2.25rem;
+                font-weight: 800;
+                color: var(--sh-text-main);
                 margin: 0;
+                letter-spacing: -0.025em;
             }
 
             .sh-page-header__description {
-                color: #475569;
-                font-size: 0.98rem;
-                line-height: 1.55;
-                margin-top: 0.35rem;
-                max-width: 54rem;
+                font-size: 1.05rem;
+                color: var(--sh-text-muted);
+                margin-top: 0.5rem;
+                line-height: 1.6;
+                max-width: 800px;
             }
 
-            section.main .stButton > button,
-            section.main .stDownloadButton > button,
-            div[data-testid="stFormSubmitButton"] > button {
-                border-radius: 6px;
-                min-height: 2.4rem;
-                font-weight: 650;
-                letter-spacing: 0;
+            /* Dashboard Cards */
+            .sh-card {
+                background-color: var(--sh-card-bg);
+                border: 1px solid var(--sh-border);
+                border-radius: 12px;
+                padding: 1.5rem;
+                height: 100%;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: var(--sh-card-shadow);
             }
 
-            section.main .stButton > button[kind="primary"],
-            section.main .stDownloadButton > button[kind="primary"],
-            div[data-testid="stFormSubmitButton"] > button[kind="primary"] {
-                border-color: var(--sh-accent);
-                background: var(--sh-accent);
+            .sh-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+                border-color: #bfdbfe;
             }
 
-            section.main .stButton > button[kind="primary"]:hover,
-            section.main .stDownloadButton > button[kind="primary"]:hover,
-            div[data-testid="stFormSubmitButton"] > button[kind="primary"]:hover {
-                border-color: var(--sh-accent-hover);
-                background: var(--sh-accent-hover);
+            .sh-card__icon {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                display: block;
+            }
+
+            .sh-card__title {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: var(--sh-text-main);
+                margin-bottom: 0.5rem;
+            }
+
+            .sh-card__desc {
+                font-size: 0.9rem;
+                color: var(--sh-text-muted);
+                line-height: 1.5;
+            }
+
+            .sh-badge {
+                display: inline-block;
+                font-size: 0.7rem;
+                font-weight: 600;
+                padding: 0.1rem 0.4rem;
+                border-radius: 4px;
+                margin-top: 1rem;
+            }
+
+            .sh-badge--media { background-color: #fef3c7; color: #92400e; }
+            .sh-badge--script { background-color: #dcfce7; color: #166534; }
+            .sh-badge--validation { background-color: #fee2e2; color: #991b1b; }
+            .sh-badge--data { background-color: #e0f2fe; color: #075985; }
+            .sh-badge--overview { background-color: #f1f5f9; color: #475569; }
+
+            /* Streamlit overrides */
+            div[data-testid="stForm"] {
+                border-radius: 12px;
+                background-color: #f8fafc;
+                border: 1px solid var(--sh-border);
+            }
+
+            .stButton > button {
+                border-radius: 8px !important;
             }
         </style>
         """,
@@ -238,9 +305,9 @@ def _render_page_header(menu):
     st.markdown(
         f"""
         <div class="sh-page-header">
-            <div class="sh-page-header__meta">{menu["category"]}</div>
-            <div class="sh-page-header__title">{menu["title"]}</div>
-            <div class="sh-page-header__description">{menu["description"]}</div>
+            <span class="sh-page-header__meta">{menu["category"]}</span>
+            <h1 class="sh-page-header__title">{menu["title"]}</h1>
+            <p class="sh-page-header__description">{menu["description"]}</p>
         </div>
         """,
         unsafe_allow_html=True,

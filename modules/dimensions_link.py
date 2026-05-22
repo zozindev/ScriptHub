@@ -47,46 +47,59 @@ def dimensions_link_page():
     st.markdown("---")
     
     # Results Sections
-    st.subheader(f"🌐 Server Address ({cluster_type})")
+    st.markdown("### 🌐 Server Address")
     
-    st.markdown("**Scripting 서버:**")
-    st.code(script_url)
+    # 실제 설문 링크 섹션
+    with st.container():
+        st.markdown("<div style='padding: 0.5rem 0; border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1rem;'><strong style='color: #1d4ed8;'>실제 설문 링크 (Scripting & Preview)</strong></div>", unsafe_allow_html=True)
+        link_col1, link_col2 = st.columns(2)
+        with link_col1:
+            st.caption("Scripting 서버")
+            st.code(script_url, language="text")
+        with link_col2:
+            st.caption("Preview 서버")
+            st.code(preview_url, language="text")
     
-    st.markdown("**Preview 서버:**")
-    st.code(preview_url)
-    
-    st.markdown("**Live 서버 테스트용:**")
-    st.code(live_test_url)
-    
-    st.markdown("**Live 서버 실사용:**")
-    st.code(live_real_url)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 배포용 링크 섹션
+    with st.container():
+        st.markdown("<div style='padding: 0.5rem 0; border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem;'><strong style='color: #047857;'>배포용 링크 (Live Server)</strong></div>", unsafe_allow_html=True)
+        link_col3, link_col4 = st.columns(2)
+        with link_col3:
+            st.caption("Live 서버 테스트용 (패널아이디 포함)")
+            st.code(live_test_url, language="text")
+        with link_col4:
+            st.caption("Live 서버 실사용")
+            st.code(live_real_url, language="text")
 
     st.markdown("---")
-    st.subheader("🛠️ Compile & Data")
     
-    c_col1, c_col2 = st.columns(2)
-    with c_col1:
-        st.markdown("**Output Location:**")
-        st.code(rf"\\EC2AMAZ-3SPBNB8\mrint\src\{sas_code}")
-        
-        st.markdown("**Auto-Activation command:**")
-        st.code(rf"\\EC2AMAZ-3SPBNB8\mrint\AutoActivate.bat {sas_code}")
-        
-    with c_col2:
-        st.markdown("**EXTRACTOR Data Address:**")
-        st.code(rf"{config['Dextap']}{sas_code}")
+    # 2단계 섹션: Compile & Data와 FTP를 카드 느낌으로 배치
+    tab1, tab2 = st.tabs(["🛠️ Compile & Data", "📂 FTP Address"])
+    
+    with tab1:
+        c_col1, c_col2 = st.columns(2)
+        with c_col1:
+            st.markdown("**Output Location:**")
+            st.code(rf"\\EC2AMAZ-3SPBNB8\mrint\src\{sas_code}", language="text")
+            
+            st.markdown("**Auto-Activation command:**")
+            st.code(rf"\\EC2AMAZ-3SPBNB8\mrint\AutoActivate.bat {sas_code}", language="text")
+            
+        with c_col2:
+            st.markdown("**EXTRACTOR Data Address:**")
+            st.code(rf"{config['Dextap']}{sas_code}", language="text")
 
-    st.markdown("---")
-    st.subheader("📂 FTP Address")
-    
-    f_col1, f_col2 = st.columns(2)
-    with f_col1:
-        st.markdown("**이미지 FTP주소:**")
-        st.code(f"ftp://125.141.196.110:22/{job_number}")
-        
-    with f_col2:
-        st.markdown("**동영상 FTP주소:**")
-        st.code(rf"\\amznfsxsvtdpvph.kt.group.local\share\CDN_Media\Multimedia\KO\{job_number}")
+    with tab2:
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            st.markdown("**이미지 FTP주소:**")
+            st.code(f"ftp://125.141.196.110:22/{job_number}", language="text")
+            
+        with f_col2:
+            st.markdown("**동영상 FTP주소:**")
+            st.code(rf"\\amznfsxsvtdpvph.kt.group.local\share\CDN_Media\Multimedia\KO\{job_number}", language="text")
 
 if __name__ == "__main__":
     dimensions_link_page()
