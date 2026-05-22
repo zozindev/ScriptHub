@@ -527,7 +527,7 @@ def main():
 
     with st.sidebar:
         st.markdown("<h1 style='font-size: 2rem;'>ScriptHub</h1>", unsafe_allow_html=True)
-        st.caption("메뉴 모드")
+        #st.caption("메뉴 모드")
         view_mode = st.segmented_control(
             "메뉴 모드",
             MENU_MODE_OPTIONS,

@@ -7,6 +7,8 @@ from openpyxl.styles import PatternFill, Font
 def is_html_error(html_content):
     if not html_content or not isinstance(html_content, str): return False
     if not re.search(r'<[^>]+>', html_content): return False
+    if re.search(r'</\s*[a-zA-Z0-9]+\s+>', html_content): return True
+    if re.search(r'<[a-zA-Z0-9]+\s+>', html_content): return True
     stack = []
     tags = re.findall(r'<(/?)([a-zA-Z0-9]+)\b[^>]*>', html_content)
     void_tags = {'br', 'img', 'hr', 'input', 'link', 'meta'}
@@ -25,6 +27,7 @@ def html_validator_page():
         output = BytesIO()
         wb = load_workbook(uploaded_file, data_only=False)
         error_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+        link_font = Font(color="0563C1", underline="single")
         error_log = []
         for sheet in wb.worksheets:
             if sheet.title == "TagErrList": continue
@@ -36,9 +39,15 @@ def html_validator_page():
         if error_log:
             if "TagErrList" in wb.sheetnames: del wb["TagErrList"]
             err_sheet = wb.create_sheet("TagErrList", 0)
-            err_sheet.append(["시트명", "에러 셀 위치"])
+            err_sheet.append(["시트명", "에러 셀 위치 (클릭 시 이동)"])
+            err_sheet.column_dimensions['A'].width = 25
+            err_sheet.column_dimensions['B'].width = 40
             for s_name, addr in error_log:
-                err_sheet.append([s_name, addr])
+                new_row_idx = err_sheet.max_row + 1
+                err_sheet.cell(row=new_row_idx, column=1, value=s_name)
+                link_cell = err_sheet.cell(row=new_row_idx, column=2, value=f"{s_name} 시트 - {addr}")
+                link_cell.hyperlink = f"#{s_name}!{addr}"
+                link_cell.font = link_font
             wb.save(output)
             output.seek(0)
             st.error(f"✅ 총 {len(error_log)}개의 에러 발견!")
