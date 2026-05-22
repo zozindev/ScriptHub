@@ -27,7 +27,7 @@ def info_page():
         {
             "name": "Image Resizer",
             "icon": "🖼️",
-            "desc": "이미지 비율을 유지하며 기준 픽셀에 맞춰 일괄 리사이즈합니다.",
+            "desc": "이미지를 지정한 크기로 일괄 리사이즈합니다.",
             "category": "Media",
             "badge": "media"
         },
@@ -62,7 +62,7 @@ def info_page():
         {
             "name": "Excel Updater",
             "icon": "📊",
-            "desc": "이전 데이터와 최신 데이터를 비교해 업데이트 파일을 생성합니다.",
+            "desc": "이전 데이터 대비 업데이트 파일을 생성합니다. (Excel)",
             "category": "Data",
             "badge": "data"
         }
