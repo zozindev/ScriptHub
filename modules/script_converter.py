@@ -1,19 +1,63 @@
-import streamlit as st
+import json
 import re
+
+import streamlit as st
 import streamlit.components.v1 as components
 
+
 def copy_to_clipboard(text):
-    escaped_text = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    serialized_text = json.dumps(text, ensure_ascii=False).replace("</", "<\\/")
     copy_js = f"""
         <script>
-        function copyText() {{
-            const text = `{escaped_text}`;
-            navigator.clipboard.writeText(text).then(() => {{
-                alert('코드가 클립보드에 복사되었습니다!');
-            }});
+        const text = {serialized_text};
+
+        function legacyCopyText(value) {{
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+
+            let copied = false;
+            try {{
+                copied = document.execCommand('copy');
+            }} catch (error) {{
+                copied = false;
+            }}
+
+            document.body.removeChild(textarea);
+            return copied;
+        }}
+
+        async function copyText() {{
+            const button = document.getElementById('copy-button');
+            let copied = false;
+
+            try {{
+                if (navigator.clipboard && window.isSecureContext) {{
+                    await navigator.clipboard.writeText(text);
+                    copied = true;
+                }}
+            }} catch (error) {{
+                // Embedded components can be denied clipboard permissions in deployment.
+            }}
+
+            if (!copied) {{
+                copied = legacyCopyText(text);
+            }}
+
+            button.textContent = copied ? '복사되었습니다!' : '복사 권한을 확인해 주세요';
+            window.setTimeout(() => {{
+                button.textContent = '📋 코드 전체 복사';
+            }}, 1600);
         }}
         </script>
-        <button class="copy-btn" onclick="copyText()" style="
+        <button id="copy-button" type="button" class="copy-btn" onclick="copyText()" style="
             background-color: #f0f2f6; /* 배경색 */
             color: #31333f;            /* 글자색 */
             border: 1px solid rgba(49, 51, 63, 0.2); /* 회색 테두리 */
