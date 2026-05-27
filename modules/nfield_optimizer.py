@@ -1,13 +1,14 @@
 import streamlit as st
 import re
 import streamlit.components.v1 as components
+from modules.output_utils import javascript_string_literal
 
 def copy_to_clipboard(text):
-    escaped_text = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    serialized_text = javascript_string_literal(text)
     copy_js = f"""
         <script>
         function copyText() {{
-            const text = `{escaped_text}`;
+            const text = {serialized_text};
             navigator.clipboard.writeText(text).then(() => {{
                 alert('코드가 클립보드에 복사되었습니다!');
             }});

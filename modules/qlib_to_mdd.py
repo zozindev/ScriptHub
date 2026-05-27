@@ -122,9 +122,10 @@ def process_script_content(content):
             i += 1
             continue
 
-        elif ("xRank" in lines[i - xRank_type - 1] or "XRANK" in lines[i - xRank_type - 1] or "xRANK" in lines[i - xRank_type - 1]) and \
+        elif bool_start and xRank_type > 1 and i - xRank_type - 1 >= 0 and \
+             ("xRank" in lines[i - xRank_type - 1] or "XRANK" in lines[i - xRank_type - 1] or "xRANK" in lines[i - xRank_type - 1]) and \
              "xRank##" not in lines[i - xRank_type - 1] and "XRank##" not in lines[i - xRank_type - 1] and "xRANK##" not in lines[i -
-xRank_type - 1] and xRank_type > 1:
+             xRank_type - 1]:
             bool_start = True
             copy_start = True
             xLoop = xRank_type + 1

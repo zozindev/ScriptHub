@@ -2,7 +2,6 @@ import pandas as pd
 import os
 import win32com.client
 import pythoncom
-import time
 import datetime
 import gc
 import streamlit as st
@@ -23,6 +22,22 @@ def ensure_2d(val):
     if not isinstance(val, (list, tuple)): return ((val,),)
     if len(val) > 0 and not isinstance(val[0], (list, tuple)): return (val,)
     return val
+
+
+def filter_deleted_respondents(df_new, old_file):
+    serial_column = "Respondent.Serial"
+    if serial_column not in df_new.columns:
+        raise ValueError(f"최신 데이터 파일의 'Data' 시트에 '{serial_column}' 컬럼이 없습니다.")
+
+    try:
+        df_del = pd.read_excel(old_file, sheet_name="del", usecols=[serial_column])
+    except Exception as e:
+        raise ValueError(f"이전 데이터 파일의 'del' 시트에서 삭제 대상 컬럼을 읽을 수 없습니다: {e}") from e
+
+    del_serials = set(df_del[serial_column].dropna().astype(str).str.strip())
+    del_serials.discard("")
+    current_serials = df_new[serial_column].astype("string").str.strip()
+    return df_new[~current_serials.isin(del_serials)]
 
 def get_pivot_df(pt):
     try:
@@ -181,13 +196,7 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
         # 2. 데이터 로드 및 필터링
         df_new = pd.read_excel(new_file, sheet_name='Data')
         if has_del:
-            try:
-                df_del = pd.read_excel(old_file, sheet_name='del', usecols=['Respondent.Serial'])
-                del_serials = set(df_del['Respondent.Serial'].astype(str).str.strip().dropna())
-                df_updated = df_new[~df_new['Respondent.Serial'].astype(str).str.strip().isin(del_serials)]
-            except Exception as e:
-                print(f"del 시트 필터링 건너뜀 (오류: {e})")
-                df_updated = df_new
+            df_updated = filter_deleted_respondents(df_new, old_file)
         else:
             df_updated = df_new
 
@@ -264,6 +273,31 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
         gc.collect()
     return error_pivots
 
+
+def build_excel_update_download(old_file, new_file):
+    ext_old = os.path.splitext(old_file.name)[1]
+    ext_new = os.path.splitext(new_file.name)[1]
+    download_name = f"{os.path.splitext(new_file.name)[0]}_updated{ext_new}"
+
+    with tempfile.TemporaryDirectory(prefix="scripthub_excel_") as temp_dir:
+        tmp_old_path = os.path.join(temp_dir, f"old{ext_old}")
+        tmp_new_path = os.path.join(temp_dir, f"new{ext_new}")
+        output_file_path = os.path.join(temp_dir, f"result{ext_new}")
+
+        with open(tmp_old_path, "wb") as f:
+            f.write(old_file.getvalue())
+        with open(tmp_new_path, "wb") as f:
+            f.write(new_file.getvalue())
+
+        error_pivots = update_excel_data_with_pywin32(tmp_old_path, tmp_new_path, output_file_path)
+        if not os.path.exists(output_file_path):
+            raise FileNotFoundError("파일 생성에 실패했습니다.")
+
+        with open(output_file_path, "rb") as f:
+            result_data = f.read()
+
+    return result_data, download_name, error_pivots
+
 def excel_updater_page():
     col1, col2 = st.columns(2)
     with col1: old_file = st.file_uploader("**이전 데이터**", type=["xlsm", "xlsx"], key="old_excel")
@@ -273,36 +307,19 @@ def excel_updater_page():
         if old_file and new_file:
             with st.spinner("엑셀 업데이트 진행 중..."):
                 try:
-                    ext_old = os.path.splitext(old_file.name)[1]
-                    ext_new = os.path.splitext(new_file.name)[1]
-                    temp_dir = tempfile.gettempdir()
-                    tmp_old_path = os.path.join(temp_dir, f"old_{int(time.time())}{ext_old}")
-                    tmp_new_path = os.path.join(temp_dir, f"new_{int(time.time())}{ext_new}")
-                    output_file_path = os.path.join(temp_dir, f"result_{int(time.time())}{ext_new}")
-                    with open(tmp_old_path, "wb") as f: f.write(old_file.getvalue())
-                    with open(tmp_new_path, "wb") as f: f.write(new_file.getvalue())
-                    
-                    error_pivots = update_excel_data_with_pywin32(tmp_old_path, tmp_new_path, output_file_path)
-                    
-                    if os.path.exists(output_file_path):
-                        # 다운로드 파일명 설정: 최신 데이터 파일명 + _updated
-                        base_name = os.path.splitext(new_file.name)[0]
-                        download_name = f"{base_name}_updated{ext_new}"
-                        
-                        with open(output_file_path, "rb") as f:
-                            st.download_button(label="📥 업데이트된 파일 다운로드", data=f, file_name=download_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                        st.success("업데이트가 완료되었습니다!")
-                        if error_pivots:
-                            st.warning("일부 피벗 테이블은 증감표를 생성하지 못했습니다:")
-                            for err in error_pivots: st.write(f"- {err}")
-                    else: st.error("파일 생성에 실패했습니다.")
+                    result_data, download_name, error_pivots = build_excel_update_download(old_file, new_file)
+                    st.download_button(
+                        label="📥 업데이트된 파일 다운로드",
+                        data=result_data,
+                        file_name=download_name,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                    st.success("업데이트가 완료되었습니다!")
+                    if error_pivots:
+                        st.warning("일부 피벗 테이블은 증감표를 생성하지 못했습니다:")
+                        for err in error_pivots: st.write(f"- {err}")
                 except Exception as e:
                     st.error(f"오류 발생: {e}")
-                finally:
-                    for p in [tmp_old_path, tmp_new_path, output_file_path]:
-                        try:
-                            if os.path.exists(p): os.unlink(p)
-                        except: pass
         else: st.warning("파일 2개를 모두 업로드해주세요.")
 
 if __name__ == "__main__": pass
