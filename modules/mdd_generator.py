@@ -1,39 +1,13 @@
-import streamlit as st
-import pandas as pd
 import re
-import os
-from io import BytesIO
+from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 from openpyxl import load_workbook
 from openpyxl.cell.text import Text
-import streamlit.components.v1 as components
-from modules.output_utils import escape_dimensions_string, javascript_string_literal
 
-def copy_to_clipboard(text):
-    serialized_text = javascript_string_literal(text)
-    copy_js = f"""
-        <script>
-        function copyText() {{
-            const text = {serialized_text};
-            navigator.clipboard.writeText(text).then(() => {{
-                alert('코드가 클립보드에 복사되었습니다!');
-            }});
-        }}
-        </script>
-        <button class="copy-btn" onclick="copyText()" style="
-            background-color: #f0f2f6; /* 배경색 */
-            color: #31333f;            /* 글자색 */
-            border: 1px solid rgba(49, 51, 63, 0.2); /* 회색 테두리 */
-            padding: 0px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 400;
-            font-size: 1rem;
-            width: 100%;
-            height: 45px;
-            transition: background-color 0.2s;
-        ">📋 코드 전체 복사</button>
-    """
-    components.html(copy_js, height=60)
+from modules.output_utils import escape_dimensions_string
+from modules.ui_utils import copy_to_clipboard
 
 def get_rich_styled_text(cell):
     """엑셀 셀의 부분 볼드(b)와 밑줄(u) 설정을 HTML 태그로 변환"""
@@ -57,7 +31,7 @@ def get_rich_styled_text(cell):
 
 
 def generate_mdd_script(df, template_dict):
-    final_script = ""
+    script_blocks = []
     for q_num, group in df.groupby("Question Number", sort=False):
         q_type = str(group["Type"].iloc[0]).lower().strip().replace("<b>", "").replace("</b>", "")
         q_text = escape_dimensions_string(group["Question Text"].iloc[0])
@@ -188,17 +162,16 @@ def generate_mdd_script(df, template_dict):
             range_val = "[1..]" if "multi" in q_type else "[1..1]"
             block = f'    {q_id} "{q_text}"\n{metadata_script}\n    categorical {range_val}\n    {{\n{items_str}\n    }};\n\n'
 
-        final_script += block
+        script_blocks.append(block)
 
-    return final_script
+    return "".join(script_blocks)
 
 def mdd_generator_page():
     st.markdown("<p style='color: black; font-size: 0.9rem; margin-bottom: -10px;'>ScriptCoded.xlsx 문서 형식에 맞춰서 업로드하세요.</p>", unsafe_allow_html=True)
 
     # 예시 파일 다운로드 버튼 추가
     # 현재 파일(modules/mdd_generator.py) 위치를 기준으로 template 폴더 경로 계산
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(os.path.dirname(current_dir), "template", "ScriptCoded.xlsx")
+    template_path = Path(__file__).resolve().parent.parent / "template" / "ScriptCoded.xlsx"
 
     try:
         with open(template_path, "rb") as f:
@@ -222,30 +195,26 @@ def mdd_generator_page():
         template_dict = {str(row[0]).lower().strip(): str(row[1]) for _, row in info_df.iterrows()}
 
         wb = load_workbook(uploaded_survey, data_only=False)
-        ws = wb['Question']
-        headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+        try:
+            ws = wb["Question"]
+            headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
 
-        full_data = []
-        l_type, l_num, l_text = "", "", ""
+            full_data = []
+            last_values = {"Type": "", "Question Number": "", "Question Text": ""}
 
-        for row in ws.iter_rows(min_row=2):
-            curr = {}
-            for i, cell in enumerate(row):
-                if i < len(headers):
-                    col = headers[i]
-                    val = get_rich_styled_text(cell)
-                    if col == "Type":
-                        if val and not val.isspace(): l_type = val
-                        curr[col] = l_type
-                    elif col == "Question Number":
-                        if val and not val.isspace(): l_num = val
-                        curr[col] = l_num
-                    elif col == "Question Text":
-                        if val and not val.isspace(): l_text = val
-                        curr[col] = l_text
+            for row in ws.iter_rows(min_row=2):
+                current = {}
+                for column, cell in zip(headers, row):
+                    value = get_rich_styled_text(cell)
+                    if column in last_values:
+                        if value and not value.isspace():
+                            last_values[column] = value
+                        current[column] = last_values[column]
                     else:
-                        curr[col] = val
-            full_data.append(curr)
+                        current[column] = value
+                full_data.append(current)
+        finally:
+            wb.close()
 
         df = pd.DataFrame(full_data)
 

@@ -1,28 +1,17 @@
 import json
 from datetime import datetime, timedelta
+from functools import lru_cache
+from importlib import import_module
 from urllib.parse import unquote
 
 import extra_streamlit_components as stx
 import streamlit as st
 
-from modules.dimensions_link import dimensions_link_page
-from modules.excel_updater import excel_updater_page
-from modules.html_validator import html_validator_page
-from modules.image_bg_remover import image_bg_remover_page
-from modules.image_resizer import image_resizer_page
-from modules.info import info_page
-from modules.mdd_generator import mdd_generator_page
-from modules.nfield_optimizer import nfield_optimizer_page
-from modules.qlib_to_mdd import qlib_to_mdd_page
-from modules.script_converter import script_converter_page
-from modules.video_resizer import video_resizer_page
-
-
 ALL_MENU_DATA = [
     {
         "label": "info",
         "icon": "info-circle",
-        "func": info_page,
+        "func": ("modules.info", "info_page"),
         "title": "Info",
         "description": "ScriptHub의 도구 구성과 사용 흐름을 확인합니다.",
         "category": "Overview",
@@ -30,7 +19,7 @@ ALL_MENU_DATA = [
     {
         "label": "Dimensions Link",
         "icon": "link-45deg",
-        "func": dimensions_link_page,
+        "func": ("modules.dimensions_link", "dimensions_link_page"),
         "title": "Dimensions Link",
         "description": "Dimensions 서버 주소와 배포 경로를 빠르게 생성합니다.",
         "category": "Script Tools",
@@ -38,7 +27,7 @@ ALL_MENU_DATA = [
     {
         "label": "BG Remover",
         "icon": "scissors",
-        "func": image_bg_remover_page,
+        "func": ("modules.image_bg_remover", "image_bg_remover_page"),
         "title": "BG Remover",
         "description": "흰색 배경을 투명 처리한 PNG 결과물을 만듭니다.",
         "category": "Media",
@@ -46,7 +35,7 @@ ALL_MENU_DATA = [
     {
         "label": "Video Resizer",
         "icon": "camera-reels",
-        "func": video_resizer_page,
+        "func": ("modules.video_resizer", "video_resizer_page"),
         "title": "Video Resizer",
         "description": "여러 MP4 파일을 지정한 해상도로 일괄 변환합니다.",
         "category": "Media",
@@ -54,7 +43,7 @@ ALL_MENU_DATA = [
     {
         "label": "Image Resizer",
         "icon": "image",
-        "func": image_resizer_page,
+        "func": ("modules.image_resizer", "image_resizer_page"),
         "title": "Image Resizer",
         "description": "이미지 비율을 유지하며 기준 픽셀에 맞춰 일괄 리사이즈합니다.",
         "category": "Media",
@@ -62,7 +51,7 @@ ALL_MENU_DATA = [
     {
         "label": "Script Converter",
         "icon": "magic",
-        "func": script_converter_page,
+        "func": ("modules.script_converter", "script_converter_page"),
         "title": "Script Converter",
         "description": "보기 목록을 Dimensions/Nfield 코드 형식으로 변환합니다.",
         "category": "Script Tools",
@@ -70,7 +59,7 @@ ALL_MENU_DATA = [
     {
         "label": "MDD Generator",
         "icon": "code",
-        "func": mdd_generator_page,
+        "func": ("modules.mdd_generator", "mdd_generator_page"),
         "title": "MDD Generator",
         "description": "정리된 설문 구조를 Dimensions MDD 스크립트로 생성합니다.",
         "category": "Script Tools",
@@ -78,7 +67,7 @@ ALL_MENU_DATA = [
     {
         "label": "HTML Validator",
         "icon": "bug",
-        "func": html_validator_page,
+        "func": ("modules.html_validator", "html_validator_page"),
         "title": "HTML Validator",
         "description": "엑셀 텍스트 안의 HTML 태그 오류를 점검합니다.",
         "category": "Validation",
@@ -86,7 +75,7 @@ ALL_MENU_DATA = [
     {
         "label": "Dimensions Qlib Optimizer",
         "icon": "file-earmark-text",
-        "func": qlib_to_mdd_page,
+        "func": ("modules.qlib_to_mdd", "qlib_to_mdd_page"),
         "title": "Dimensions Qlib Optimizer",
         "description": "Dimensions 메타데이터 스크립트를 정리하고 MDD 변환을 돕습니다.",
         "category": "Script Tools",
@@ -94,7 +83,7 @@ ALL_MENU_DATA = [
     {
         "label": "Nfield Qlib Optimizer",
         "icon": "terminal",
-        "func": nfield_optimizer_page,
+        "func": ("modules.nfield_optimizer", "nfield_optimizer_page"),
         "title": "Nfield Qlib Optimizer",
         "description": "Nfield Qlib 텍스트를 정리된 스크립트 형태로 다듬습니다.",
         "category": "Script Tools",
@@ -102,7 +91,7 @@ ALL_MENU_DATA = [
     {
         "label": "Excel Updater",
         "icon": "file-earmark-spreadsheet",
-        "func": excel_updater_page,
+        "func": ("modules.excel_updater", "excel_updater_page"),
         "title": "Excel Updater",
         "description": "이전 데이터와 최신 데이터를 비교해 업데이트 파일을 생성합니다.",
         "category": "Data",
@@ -110,12 +99,45 @@ ALL_MENU_DATA = [
 ]
 
 MENU_LABELS = [menu["label"] for menu in ALL_MENU_DATA]
+MENU_LABEL_SET = frozenset(MENU_LABELS)
+MENU_BY_LABEL = {menu["label"]: menu for menu in ALL_MENU_DATA}
 ALL_MENU_MODE = "모든 메뉴"
 FAVORITE_MENU_MODE = "즐겨찾기"
 MENU_MODE_OPTIONS = [ALL_MENU_MODE, FAVORITE_MENU_MODE]
 FAVORITES_COOKIE_NAME = "scripthub_favorites"
 LEGACY_FAVORITES_COOKIE_NAME = "favorites"
 FAVORITES_COOKIE_DAYS = 365
+MEDIA_RESULT_STATE_KEYS_BY_LABEL = {
+    "BG Remover": (
+        "processed_images",
+        "processed_image_previews",
+        "processed_images_zip",
+    ),
+    "Video Resizer": (
+        "converted_files",
+        "converted_files_zip",
+        "converted_resolution",
+    ),
+    "Image Resizer": (
+        "resized_images",
+        "resized_images_zip",
+    ),
+}
+
+
+@lru_cache(maxsize=None)
+def _resolve_page(page_reference):
+    module_name, function_name = page_reference
+    module = import_module(module_name)
+    return getattr(module, function_name)
+
+
+def _release_previous_media_results(selected_label):
+    previous_label = st.session_state.get("active_menu_with_results")
+    if previous_label and previous_label != selected_label:
+        for state_key in MEDIA_RESULT_STATE_KEYS_BY_LABEL.get(previous_label, ()):
+            st.session_state.pop(state_key, None)
+    st.session_state.active_menu_with_results = selected_label
 
 
 def _inject_app_styles():
@@ -319,9 +341,11 @@ def _clean_favorites(raw_favorites):
         return []
 
     cleaned = []
+    seen = set()
     for label in raw_favorites:
-        if label in MENU_LABELS and label not in cleaned:
+        if label in MENU_LABEL_SET and label not in seen:
             cleaned.append(label)
+            seen.add(label)
     return cleaned
 
 
@@ -417,8 +441,11 @@ def _render_all_menus():
 
 
 def _render_favorite_menu_list():
-    favorite_items = [menu for menu in ALL_MENU_DATA if menu["label"] in st.session_state.favorites]
-    favorite_items.sort(key=lambda menu: st.session_state.favorites.index(menu["label"]))
+    favorite_items = [
+        MENU_BY_LABEL[label]
+        for label in st.session_state.favorites
+        if label in MENU_BY_LABEL
+    ]
 
     if not favorite_items:
         st.info("즐겨찾기 메뉴가 없습니다.")
@@ -427,7 +454,7 @@ def _render_favorite_menu_list():
     _render_menu_buttons(favorite_items, "nav_favorites")
 
 
-def _render_favorite_order_editor(cookie_manager):
+def _render_favorite_order_editor():
     st.caption("즐겨찾기 순서")
 
     if not st.session_state.favorites:
@@ -460,7 +487,7 @@ def _render_favorite_order_editor(cookie_manager):
             st.write(label)
 
 
-def _render_favorite_toggle_editor(cookie_manager):
+def _render_favorite_toggle_editor():
     st.caption("전체 메뉴")
 
     for menu in ALL_MENU_DATA:
@@ -480,11 +507,11 @@ def _render_favorite_toggle_editor(cookie_manager):
             st.write(label)
 
 
-def _render_favorite_edit_mode(cookie_manager):
+def _render_favorite_edit_mode():
     st.subheader("즐겨찾기 편집")
-    _render_favorite_order_editor(cookie_manager)
+    _render_favorite_order_editor()
     st.divider()
-    _render_favorite_toggle_editor(cookie_manager)
+    _render_favorite_toggle_editor()
     st.divider()
 
     if st.button("편집 완료", use_container_width=True, type="primary"):
@@ -542,7 +569,7 @@ def main():
             st.session_state.edit_mode = False
             _render_all_menus()
         elif st.session_state.edit_mode:
-            _render_favorite_edit_mode(cookie_manager)
+            _render_favorite_edit_mode()
         else:
             _render_favorite_menu_list()
             st.divider()
@@ -551,9 +578,11 @@ def main():
                 st.rerun()
 
     final_label = st.session_state.selected_menu
-    selected_menu = next((menu for menu in ALL_MENU_DATA if menu["label"] == final_label), ALL_MENU_DATA[0])
+    _release_previous_media_results(final_label)
+    selected_menu = MENU_BY_LABEL.get(final_label, ALL_MENU_DATA[0])
     _render_page_header(selected_menu)
-    selected_menu["func"]()
+    page_function = _resolve_page(selected_menu["func"])
+    page_function()
 
 
 if __name__ == "__main__":

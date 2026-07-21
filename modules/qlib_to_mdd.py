@@ -1,70 +1,40 @@
-import streamlit as st
-import os
 import re
+from functools import lru_cache
 from pathlib import Path
-from io import StringIO
-import string # string 모듈 import
 
-# AutoQlib.py에서 추출한 헬퍼 함수들 (이전 답변에서 제공된 내용 그대로 사용)
-# -----------------------------------------------------------------------------
-# ... (xRank_template, modify_info_lines, fix_previous_lines, delete_line,
-#      change_line, change2_line, copy_line 함수들은 이전 답변의 코드를 그대로 사용합니다.)
-# ... (process_script_content 함수도 이전 답변의 코드를 그대로 사용합니다.)
+import streamlit as st
 
-# AutoQlib.py에서 추출한 헬퍼 함수들
-# -----------------------------------------------------------------------------
-# ... (이전 답변의 xRank_template, modify_info_lines, fix_previous_lines, delete_line,
-#      change_line, change2_line, copy_line 함수 코드는 여기에 그대로 포함되어 있다고 가정합니다.)
+
+TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "template"
+
 
 # 파일에서 템플릿을 읽어와서 리스트에 추가하는 함수 (AutoQlib.py와 동일한 인코딩 시도 로직 적용)
-def xRank_template(xRank, lines):
-    # 현재 파일의 위치를 기준으로 프로젝트 루트를 찾고, 템플릿 폴더를 지정합니다.
-    module_dir = Path(__file__).resolve().parent.parent
-    template_path = module_dir / "template" / f"{xRank}.txt"
-    
-    # AutoQlib.py와 동일한 인코딩 시도 목록 사용
-    encodings_to_try = ['utf-8', 'utf-16', 'cp1252', 'latin1']
-    content = None
-    
-    for encoding in encodings_to_try:
+@lru_cache(maxsize=None)
+def _load_template(template_name):
+    template_path = TEMPLATE_DIR / f"{template_name}.txt"
+
+    for encoding in ("utf-8", "utf-16", "cp1252", "latin1"):
         try:
-            # AutoQlib.py와 동일하게 'r' 모드로 파일을 열고 인코딩 지정
-            with open(template_path, 'r', encoding=encoding) as file:
-                content = file.read()
-            break  # 성공하면 반복 종료
+            return tuple(template_path.read_text(encoding=encoding).splitlines())
         except FileNotFoundError:
             st.error(f"템플릿 파일 '{template_path}'을(를) 찾을 수 없습니다.")
-            return lines # 파일 없으면 빈 리스트 반환
+            return ()
         except UnicodeDecodeError:
-            # 해당 인코딩으로 디코딩 실패 시, 다음 인코딩 시도
             continue
         except Exception as e:
-            # 기타 예상치 못한 오류 처리
             st.error(f"템플릿 파일 '{template_path}' 읽기 오류 ({encoding}): {str(e)}")
-            return lines 
+            return ()
+    return ()
 
-    if content:
-        for line in content.splitlines():
-            lines.append(line.rstrip('\n'))
+
+def xRank_template(xRank, lines):
+    lines.extend(_load_template(xRank))
     return lines
-    
-# ... (나머지 헬퍼 함수들: modify_info_lines, fix_previous_lines, delete_line,
-#      change_line, change2_line, copy_line 등은 이전 답변의 코드를 그대로 사용합니다.)
-# ... (process_script_content 함수도 이전 답변의 코드를 그대로 사용합니다.)
 
 # -----------------------------------------------------------------------------
 # 메인 처리 함수 (AutoQlib.py의 modify_text_file 로직을 Streamlit용으로 포팅)
 # -----------------------------------------------------------------------------
 def process_script_content(content):
-    # AutoQlib.py의 modify_text_file 함수 핵심 로직을 여기에 붙여넣습니다.
-    # (이전 답변에서 제공된 process_script_content 함수 코드를 그대로 사용합니다.)
-    # ... (이전 답변의 process_script_content 함수 코드 내용) ...
-    # return '\n'.join(modified_lines)
-
-    # AutoQlib.py의 modify_text_file 함수 핵심 로직을 Streamlit용으로 포팅한 코드
-    # (이전 답변에서 제공된 process_script_content 함수 코드의 내용이 여기에 해당합니다.)
-    # ... (이전 답변의 process_script_content 함수의 전체 코드가 여기에 위치한다고 가정합니다.)
-    # 임시로 여기서 다시 복사해 넣습니다.
     lines1 = content.splitlines()
     lines1 = [line for line in lines1 if 'ANALYSIS:' not in line]
 
@@ -307,8 +277,7 @@ def modify_info_lines(modified_lines):
     return modified_lines
 
 def copy_line(source_list, target_list):
-    for linetmp in source_list:
-        target_list.append(linetmp)
+    target_list.extend(source_list)
     return target_list
 
 # 특정 구간을 수정하고 새로운 리스트로 반환하는 함수
@@ -375,7 +344,5 @@ def fix_previous_lines(modified_lines):
 
 # 리스트에서 특정 문자열이 포함된 라인을 삭제하는 함수
 def delete_line(lista, stringa):
-    for i in range(len(lista) - 1, -1, -1):  # 리스트를 뒤에서부터 순회
-        if stringa in lista[i]:  # 문자열이 포함된 라인을 찾으면
-            lista.pop(i)  # 해당 라인을 삭제
+    lista[:] = [line for line in lista if stringa not in line]
     return lista

@@ -1,5 +1,17 @@
 import streamlit as st
 
+
+CLUSTERS = {
+    "Cluster A": {
+        "scrA": "https://scripting601-aw2e.grpitsrv.com/mrIWeb/mrIweb.dll",
+        "preA": "https://t2-test.ktrmr.com/surveyA.aspx",
+        "LiveTestA": "https://t2.ktrmr.com/surveyA.aspx",
+        "LiveA": "https://t2.ktrmr.com/surveyA.aspx",
+        "Dextap": r"\\EC2AMAZ-UCL1E9E\DPAT_Output_EU\\",
+    }
+}
+
+
 def dimensions_link_page():
     # Input Fields
     with st.container():
@@ -21,18 +33,7 @@ def dimensions_link_page():
         with col5:
             rs_value = st.selectbox("RS", ["1", "0"], index=0, help="Restart capability (1: possible)")
 
-    # Cluster Configuration
-    clusters = {
-        "Cluster A": {
-            "scrA": "https://scripting601-aw2e.grpitsrv.com/mrIWeb/mrIweb.dll",
-            "preA": "https://t2-test.ktrmr.com/surveyA.aspx",
-            "LiveTestA": "https://t2.ktrmr.com/surveyA.aspx",
-            "LiveA": "https://t2.ktrmr.com/surveyA.aspx",
-            "Dextap": r"\\EC2AMAZ-UCL1E9E\DPAT_Output_EU\\"
-        }
-    }
-
-    config = clusters[cluster_type]
+    config = CLUSTERS[cluster_type]
 
     # URL Construction
     common_query = f"?i.project={sas_code}&s={src_value}&id=1&chk=na&aar=1&pid=auto&i.test=1&debug={debug_code}{language_code}{custom_option}"

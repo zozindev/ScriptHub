@@ -1,14 +1,28 @@
 import streamlit as st
-import os
 import tempfile
-import zipfile
 from pathlib import Path
-from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from core.ffmpeg_utils import (
     RESOLUTIONS, QSV_GLOBAL_QUALITY, X264_CRF,
-    have_ffmpeg_tools, qsv_available, probe_video, build_ffmpeg_cmd, run_cmd
+    have_ffmpeg_tools, probe_video, qsv_available, recommended_transcode_workers,
+    transcode_video,
 )
+from modules.file_utils import build_zip_bytes, deduplicate_filenames
+
+
+VIDEO_RESULT_STATE_KEYS = (
+    "converted_files",
+    "converted_files_zip",
+    "converted_resolution",
+)
+
+
+def _clear_video_results():
+    st.session_state.converted_files = []
+    st.session_state.converted_files_zip = None
+    st.session_state.converted_resolution = None
+
 
 def video_resizer_page():
     has_tools, reason = have_ffmpeg_tools()
@@ -29,17 +43,19 @@ def video_resizer_page():
 
     st.markdown("---")
     
-    max_workers = 3
-
     if "converted_files" not in st.session_state:
         st.session_state.converted_files = []
+    if "converted_files_zip" not in st.session_state:
+        st.session_state.converted_files_zip = None
+    if "converted_resolution" not in st.session_state:
+        st.session_state.converted_resolution = None
 
     if st.button("🚀 변환 시작", disabled=not uploaded_files):
-        st.session_state.converted_files = []
+        _clear_video_results()
         
         use_qsv = qsv_available()
         target_w, target_h = RESOLUTIONS[target_res]
-        quality = QSV_GLOBAL_QUALITY[target_res] if use_qsv else X264_CRF[target_res]
+        max_workers = recommended_transcode_workers(len(uploaded_files), use_qsv)
         
         progress_bar = st.progress(0.0)
         status_text = st.empty()
@@ -56,9 +72,9 @@ def video_resizer_page():
                 try:
                     tmp_input_path = tmp_dir_path / f"input_{idx}.mp4"
                     with open(tmp_input_path, "wb") as f:
-                        f.write(uploaded_file.read())
+                        f.write(uploaded_file.getbuffer())
                     
-                    w, h, dur = probe_video(tmp_input_path)
+                    w, h, _ = probe_video(tmp_input_path)
                     if not w or not h:
                         return "failed", f"❌ 분석 실패: {uploaded_file.name}", None
                     
@@ -68,18 +84,25 @@ def video_resizer_page():
                     out_filename = f"{Path(uploaded_file.name).stem}_{target_res}.mp4"
                     out_path = tmp_dir_path / f"output_{idx}.mp4"
                     
-                    cmd = build_ffmpeg_cmd(tmp_input_path, out_path, target_w, target_h, quality, use_qsv)
-                    r = run_cmd(cmd)
+                    r, encoder, qsv_error = transcode_video(
+                        tmp_input_path,
+                        out_path,
+                        target_w,
+                        target_h,
+                        QSV_GLOBAL_QUALITY[target_res],
+                        X264_CRF[target_res],
+                        use_qsv,
+                    )
                     
                     if r.returncode == 0:
-                        with open(out_path, "rb") as f:
-                            data = f.read()
-                        return "success", f"✅ 완료: {uploaded_file.name}", (out_filename, data)
+                        data = out_path.read_bytes()
+                        fallback_note = " (QSV → x264 자동 전환)" if qsv_error and encoder == "x264" else ""
+                        return "success", f"✅ 완료: {uploaded_file.name}{fallback_note}", (out_filename, data)
                     else:
                         error_msg = f"❌ 변환 실패: {uploaded_file.name} (Exit Code: {r.returncode})"
-                        if r.stderr:
-                            # Show the last 500 characters of stderr for better debugging
-                            stderr_tail = r.stderr[-500:] if len(r.stderr) > 500 else r.stderr
+                        error_detail = r.stderr or qsv_error
+                        if error_detail:
+                            stderr_tail = error_detail[-500:]
                             error_msg += f"\nError Detail:\n...{stderr_tail}"
                         return "failed", error_msg, None
                 except Exception as e:
@@ -107,20 +130,12 @@ def video_resizer_page():
                         progress_bar.progress(prog_val)
                         status_text.text(f"처리 중... {i+1}/{total_files} (성공: {results['converted']}, 실패: {results['failed']})")
 
-            final_files = []
-            name_counts = {}
-            for fname, fdata in processed_data:
-                base_name = fname
-                if base_name in name_counts:
-                    name_counts[base_name] += 1
-                    stem = Path(base_name).stem
-                    ext = Path(base_name).suffix
-                    fname = f"{stem} ({name_counts[base_name]}){ext}"
-                else:
-                    name_counts[base_name] = 0
-                final_files.append((fname, fdata))
-
-            st.session_state.converted_files = final_files
+            converted_files = deduplicate_filenames(processed_data)
+            st.session_state.converted_files = converted_files
+            st.session_state.converted_files_zip = (
+                build_zip_bytes(converted_files) if len(converted_files) > 1 else None
+            )
+            st.session_state.converted_resolution = target_res
             
             # 실패가 있는 경우 강조 표시
             if results["failed"] > 0:
@@ -130,21 +145,20 @@ def video_resizer_page():
 
     if st.session_state.converted_files:
         st.markdown("### 📥 결과물 다운로드")
+        if st.button("🧹 변환 결과 지우기", key="clear_video_results"):
+            _clear_video_results()
+            st.rerun()
         
         # Grid layout for download buttons
         if len(st.session_state.converted_files) > 1:
-            zip_buffer = BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                for filename, data in st.session_state.converted_files:
-                    zf.writestr(filename, data)
-            
             st.download_button(
                 label="🎁 전체 파일 한번에 다운로드 (ZIP)",
-                data=zip_buffer.getvalue(),
-                file_name=f"resized_videos_{target_res}.zip",
+                data=st.session_state.converted_files_zip,
+                file_name=f"resized_videos_{st.session_state.converted_resolution}.zip",
                 mime="application/zip",
                 use_container_width=True,
-                type="primary"
+                type="primary",
+                on_click="ignore",
             )
             st.write("")
 
@@ -157,5 +171,6 @@ def video_resizer_page():
                     file_name=filename,
                     mime="video/mp4",
                     key=f"dl_{i}_{filename}",
-                    use_container_width=True
+                    use_container_width=True,
+                    on_click="ignore",
                 )

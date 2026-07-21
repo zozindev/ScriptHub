@@ -1,78 +1,79 @@
 import streamlit as st
 
-def info_page():
-    # UI 구성 데이터 (app.py의 ALL_MENU_DATA와 동기화된 설명 및 아이콘)
-    tools = [
-        {
-            "name": "Dimensions Link",
-            "icon": "🔗",
-            "desc": "Dimensions 서버 주소와 배포 경로를 빠르게 생성합니다.",
-            "category": "Script Tools",
-            "badge": "script"
-        },
-        {
-            "name": "BG Remover",
-            "icon": "✂️",
-            "desc": "흰색 배경을 투명 처리한 PNG 결과물을 만듭니다.",
-            "category": "Media",
-            "badge": "media"
-        },
-        {
-            "name": "Video Resizer",
-            "icon": "🎥",
-            "desc": "여러 MP4 파일을 지정한 해상도로 일괄 변환합니다.",
-            "category": "Media",
-            "badge": "media"
-        },
-        {
-            "name": "Image Resizer",
-            "icon": "🖼️",
-            "desc": "이미지를 지정한 크기로 일괄 리사이즈합니다.",
-            "category": "Media",
-            "badge": "media"
-        },
-        {
-            "name": "Script Converter",
-            "icon": "🪄",
-            "desc": "보기 목록을 Dimensions/Nfield 코드 형식으로 변환합니다.",
-            "category": "Script Tools",
-            "badge": "script"
-        },
-        {
-            "name": "MDD Generator",
-            "icon": "📝",
-            "desc": "정리된 설문 구조를 Dimensions MDD 스크립트로 생성합니다.",
-            "category": "Script Tools",
-            "badge": "script"
-        },
-        {
-            "name": "HTML Validator",
-            "icon": "🔍",
-            "desc": "엑셀 텍스트 안의 HTML 태그 오류를 점검합니다.",
-            "category": "Validation",
-            "badge": "validation"
-        },
-        {
-            "name": "Qlib Optimizer",
-            "icon": "⚡",
-            "desc": "Dimensions/Nfield Qlib의 UI 구조 및 태그를 최적화합니다.",
-            "category": "Script Tools",
-            "badge": "script"
-        },
-        {
-            "name": "Excel Updater",
-            "icon": "📊",
-            "desc": "이전 데이터 대비 업데이트 파일을 생성합니다. (Excel)",
-            "category": "Data",
-            "badge": "data"
-        }
-    ]
 
+TOOLS = [
+    {
+        "name": "Dimensions Link",
+        "icon": "🔗",
+        "desc": "Dimensions 서버 주소와 배포 경로를 빠르게 생성합니다.",
+        "category": "Script Tools",
+        "badge": "script",
+    },
+    {
+        "name": "BG Remover",
+        "icon": "✂️",
+        "desc": "흰색 배경을 투명 처리한 PNG 결과물을 만듭니다.",
+        "category": "Media",
+        "badge": "media",
+    },
+    {
+        "name": "Video Resizer",
+        "icon": "🎥",
+        "desc": "여러 MP4 파일을 지정한 해상도로 일괄 변환합니다.",
+        "category": "Media",
+        "badge": "media",
+    },
+    {
+        "name": "Image Resizer",
+        "icon": "🖼️",
+        "desc": "이미지를 지정한 크기로 일괄 리사이즈합니다.",
+        "category": "Media",
+        "badge": "media",
+    },
+    {
+        "name": "Script Converter",
+        "icon": "🪄",
+        "desc": "보기 목록을 Dimensions/Nfield 코드 형식으로 변환합니다.",
+        "category": "Script Tools",
+        "badge": "script",
+    },
+    {
+        "name": "MDD Generator",
+        "icon": "📝",
+        "desc": "정리된 설문 구조를 Dimensions MDD 스크립트로 생성합니다.",
+        "category": "Script Tools",
+        "badge": "script",
+    },
+    {
+        "name": "HTML Validator",
+        "icon": "🔍",
+        "desc": "엑셀 텍스트 안의 HTML 태그 오류를 점검합니다.",
+        "category": "Validation",
+        "badge": "validation",
+    },
+    {
+        "name": "Qlib Optimizer",
+        "icon": "⚡",
+        "desc": "Dimensions/Nfield Qlib의 UI 구조 및 태그를 최적화합니다.",
+        "category": "Script Tools",
+        "badge": "script",
+    },
+    {
+        "name": "Excel Updater",
+        "icon": "📊",
+        "desc": "이전 데이터 대비 업데이트 파일을 생성합니다. (Excel)",
+        "category": "Data",
+        "badge": "data",
+    },
+]
+
+
+def info_page():
     st.markdown("### 🛠️ Available Tools")
     
     # 3열 그리드 구성
     cols = st.columns(3)
-    for i, tool in enumerate(tools):
+    for i, tool in enumerate(TOOLS):
         with cols[i % 3]:
             st.markdown(
                 f"""

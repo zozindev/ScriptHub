@@ -1,34 +1,24 @@
-import streamlit as st
 import re
-import streamlit.components.v1 as components
-from modules.output_utils import javascript_string_literal
 
-def copy_to_clipboard(text):
-    serialized_text = javascript_string_literal(text)
-    copy_js = f"""
-        <script>
-        function copyText() {{
-            const text = {serialized_text};
-            navigator.clipboard.writeText(text).then(() => {{
-                alert('코드가 클립보드에 복사되었습니다!');
-            }});
-        }}
-        </script>
-        <button class="copy-btn" onclick="copyText()" style="
-            background-color: #f0f2f6; /* 배경색 */
-            color: #31333f;            /* 글자색 */
-            border: 1px solid rgba(49, 51, 63, 0.2); /* 회색 테두리 */
-            padding: 0px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 400;
-            font-size: 1rem;
-            width: 100%;
-            height: 45px;
-            transition: background-color 0.2s;
-        ">📋 코드 전체 복사</button>
-    """
-    components.html(copy_js, height=60)
+import streamlit as st
+
+from modules.ui_utils import copy_to_clipboard
+
+
+SCORE_LIST_RE = re.compile(r'\*LIST\s+"([^"]+score[^"]*)"', re.IGNORECASE)
+CODE_LINE_RE = re.compile(r'^\s*\d+:')
+SCORE_VALUE_RE = re.compile(r'^(\s*\d+:)\s*(\d+)\s*(.*)')
+LEADING_CODE_SPACE_RE = re.compile(r'^(\s*\d+:)\s+')
+PROPERTIES_SPACE_RE = re.compile(r'\s+(\*PROPERTIES)')
+DIMVAR_RE = re.compile(r'DIMVAR=([^"\s;]+)')
+QUESTION_NUMBER_RE = re.compile(r'^\*QUESTION\s+\d+')
+USELIST_NAME_RE = re.compile(r'"([^"]+)"')
+UIOPTIONS_RE = re.compile(r'\*?UIOPTIONS\s*"[^"]*"')
+QUESTION_ID_RE = re.compile(r'QUESTION\s+(\d+)')
+TABLE_RE = re.compile(r'\*TABLE\s*"[^"]*"')
+MULTIPLE_SPACES_RE = re.compile(r'\s{2,}')
+EXCESSIVE_NEWLINES_RE = re.compile(r'\n{4,}')
+
 
 def nfield_optimizer_page():
     st.markdown("<p style='color: black; font-size: 0.9rem; margin-bottom: -10px;'>Nfield Qlib (.txt, .q) 파일을 업로드 하세요.</p>", unsafe_allow_html=True)
@@ -51,16 +41,16 @@ def nfield_optimizer_page():
         score_lists = {}
         current_list = None
         for idx in range(len(lines)):
-            list_match = re.search(r'\*LIST\s+"([^"]+score[^"]*)"', lines[idx], re.IGNORECASE)
+            list_match = SCORE_LIST_RE.search(lines[idx])
             if list_match:
                 current_list = list_match.group(1)
                 score_lists[current_list] = 0
                 continue
             if lines[idx].strip().startswith("*LIST") or lines[idx].strip().startswith("*QUESTION"):
                 current_list = None
-            if current_list and re.match(r'^\s*\d+:', lines[idx]):
+            if current_list and CODE_LINE_RE.match(lines[idx]):
                 score_lists[current_list] += 1
-                m = re.match(r'^(\s*\d+:)\s*(\d+)\s*(.*)', lines[idx])
+                m = SCORE_VALUE_RE.match(lines[idx])
                 if m: lines[idx] = f"{m.group(1)}<p>{m.group(2)}</p>{m.group(3)}"
 
         processed_lines = []
@@ -75,8 +65,8 @@ def nfield_optimizer_page():
             if line.strip().startswith("**") and "**TABLE" not in line:
                 continue
 
-            line = re.sub(r'^(\s*\d+:)\s+', r'\1', line)
-            line = re.sub(r'\s+(\*PROPERTIES)', r'\1', line)
+            line = LEADING_CODE_SPACE_RE.sub(r'\1', line)
+            line = PROPERTIES_SPACE_RE.sub(r'\1', line)
 
             if "QUESTION" in line:
                 if processed_lines and processed_lines[-1] != "":
@@ -86,7 +76,7 @@ def nfield_optimizer_page():
                 if not line.strip().startswith("*"):
                     line = "*" + line.lstrip()
                 
-                dimvar_match = re.search(r'DIMVAR=([^"\s;]+)', line)
+                dimvar_match = DIMVAR_RE.search(line)
                 if dimvar_match:
                     var_full_id = dimvar_match.group(1)
                     var_pure_id = var_full_id.split('.')[0]
@@ -101,7 +91,7 @@ def nfield_optimizer_page():
                             if next_line: info_contents.append(next_line)
                             skip_rows += 1
                         combined_content = "<br/>".join(info_contents)
-                        q_num_match = re.search(r'^\*QUESTION\s+\d+', line)
+                        q_num_match = QUESTION_NUMBER_RE.search(line)
                         base_q_line = q_num_match.group(0) if q_num_match else line.split("PROPERTIES")[0].strip()
                         info_html = f"<br/><style>.question-component {{display:none !important;}} .theme-standard-bg-color2 {{background-color:#fff !important;}}</style><br/><div style='border:solid 1px;padding: 10px;text-align:left;word-break:keep-all;'><font size='5'>{combined_content}</font></div>"
                         processed_lines.append(base_q_line)
@@ -118,8 +108,8 @@ def nfield_optimizer_page():
                             temp_line = lines[j].strip()
                             if temp_line.startswith("*QUESTION") or temp_line.startswith("*LIST"): break
                             if "USELIST" in temp_line:
-                                if "score" in temp_line.lower(): used_score_list = re.search(r'"([^"]+)"', temp_line).group(1)
-                                if "order" in temp_line.lower(): used_order_list = re.search(r'"([^"]+)"', temp_line).group(1)
+                                if "score" in temp_line.lower(): used_score_list = USELIST_NAME_RE.search(temp_line).group(1)
+                                if "order" in temp_line.lower(): used_order_list = USELIST_NAME_RE.search(temp_line).group(1)
                             elif temp_line and not temp_line.startswith("*"): text_line_idx = j
 
                         # --- UI 옵션 결정 ---
@@ -138,7 +128,7 @@ def nfield_optimizer_page():
                         # ★ 핵심 수정: UIOPTIONS 치환 (별표 중복 방지 로직) ★
                         if "UIOPTIONS" in line:
                             # 이미 별표가 있든 없든 'UIOPTIONS "..." ' 전체를 찾아서 교체
-                            line = re.sub(r'\*?UIOPTIONS\s*"[^"]*"', f'*UIOPTIONS "{new_ui_val}"', line)
+                            line = UIOPTIONS_RE.sub(f'*UIOPTIONS "{new_ui_val}"', line)
                         else:
                             line += f' *UIOPTIONS "{new_ui_val}"'
 
@@ -151,7 +141,7 @@ def nfield_optimizer_page():
                         # 순위 문항일 경우 REPEAT 로직 추가 생성
                         if used_order_list:
                             processed_lines.append(line)
-                            q_num = re.search(r'QUESTION\s+(\d+)', line).group(1)
+                            q_num = QUESTION_ID_RE.search(line).group(1)
                             for j in range(i+1, len(lines)):
                                 next_l = lines[j].rstrip()
                                 if next_l.strip().startswith("*QUESTION") or next_l.strip().startswith("*LIST"): break
@@ -179,10 +169,10 @@ def nfield_optimizer_page():
 
             # 4. *TABLE 처리
             if "*TABLE" in line and "**TABLE" not in line:
-                table_match = re.search(r'\*TABLE\s*"[^"]*"', line)
+                table_match = TABLE_RE.search(line)
                 if table_match:
                     t_str = table_match.group(0)
-                    line = re.sub(r'\s{2,}', ' ', line.replace(t_str, "")).strip() + " " + t_str.replace("*TABLE", "**TABLE")
+                    line = MULTIPLE_SPACES_RE.sub(' ', line.replace(t_str, "")).strip() + " " + t_str.replace("*TABLE", "**TABLE")
             
             if line.strip().startswith("LIST") and not line.strip().startswith("*LIST"):
                 line = line.replace("LIST", "*LIST", 1)
@@ -190,7 +180,7 @@ def nfield_optimizer_page():
             processed_lines.append(line)
             
         final_text = "\n".join(processed_lines)
-        final_text = re.sub(r'\n{4,}', '\n\n\n', final_text)
+        final_text = EXCESSIVE_NEWLINES_RE.sub('\n\n\n', final_text)
 
         st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
         col1, col2, _ = st.columns([3, 3, 4])

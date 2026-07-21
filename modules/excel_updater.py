@@ -1,14 +1,23 @@
-import pandas as pd
-import os
-import win32com.client
-import pythoncom
 import datetime
 import gc
-import streamlit as st
+import os
 import tempfile
 
+
+import pandas as pd
+import pythoncom
+import streamlit as st
+import win32com.client
+
+
+SERIAL_COLUMN = "Respondent.Serial"
+PIVOT_LABELS = frozenset({"열 레이블", "Column Labels", "행 레이블", "Row Labels"})
+EXCEL_FILE_FORMATS = {".xlsm": 52, ".xlsx": 51}
+
+
 def clean_val(val):
-    if pd.isnull(val): return None
+    if pd.isnull(val):
+        return None
     if isinstance(val, pd.Timestamp):
         if val.tzinfo is not None:
             return val.tz_localize(None).to_pydatetime()
@@ -17,27 +26,72 @@ def clean_val(val):
         return val.isoformat()
     return val
 
+
+def dataframe_to_excel_values(dataframe):
+    excel_values = [dataframe.columns.tolist()]
+    for row in dataframe.itertuples(index=False, name=None):
+        excel_values.append([clean_val(value) for value in row])
+    return excel_values
+
+
 def ensure_2d(val):
-    if val is None: return ((),)
-    if not isinstance(val, (list, tuple)): return ((val,),)
-    if len(val) > 0 and not isinstance(val[0], (list, tuple)): return (val,)
+    if val is None:
+        return ((),)
+    if not isinstance(val, (list, tuple)):
+        return ((val,),)
+    if val and not isinstance(val[0], (list, tuple)):
+        return (val,)
     return val
 
 
 def filter_deleted_respondents(df_new, old_file):
-    serial_column = "Respondent.Serial"
-    if serial_column not in df_new.columns:
-        raise ValueError(f"최신 데이터 파일의 'Data' 시트에 '{serial_column}' 컬럼이 없습니다.")
+    if SERIAL_COLUMN not in df_new.columns:
+        raise ValueError(f"최신 데이터 파일의 'Data' 시트에 '{SERIAL_COLUMN}' 컬럼이 없습니다.")
 
     try:
-        df_del = pd.read_excel(old_file, sheet_name="del", usecols=[serial_column])
+        df_del = pd.read_excel(old_file, sheet_name="del", usecols=[SERIAL_COLUMN])
     except Exception as e:
         raise ValueError(f"이전 데이터 파일의 'del' 시트에서 삭제 대상 컬럼을 읽을 수 없습니다: {e}") from e
 
-    del_serials = set(df_del[serial_column].dropna().astype(str).str.strip())
+    return filter_deleted_respondents_from_frame(df_new, df_del)
+
+
+def filter_deleted_respondents_from_frame(df_new, df_del):
+    if SERIAL_COLUMN not in df_new.columns:
+        raise ValueError(f"최신 데이터 파일의 'Data' 시트에 '{SERIAL_COLUMN}' 컬럼이 없습니다.")
+    if SERIAL_COLUMN not in df_del.columns:
+        raise ValueError(f"이전 데이터 파일의 'del' 시트에 '{SERIAL_COLUMN}' 컬럼이 없습니다.")
+
+    del_serials = set(df_del[SERIAL_COLUMN].dropna().astype(str).str.strip())
     del_serials.discard("")
-    current_serials = df_new[serial_column].astype("string").str.strip()
+    current_serials = df_new[SERIAL_COLUMN].astype("string").str.strip()
     return df_new[~current_serials.isin(del_serials)]
+
+
+def load_excel_update_data(new_file, old_file):
+    with pd.ExcelFile(new_file) as xls_new, pd.ExcelFile(old_file) as xls_old:
+        if 'Data' not in xls_new.sheet_names:
+            raise ValueError("최신 데이터 파일에 'Data' 시트가 존재하지 않습니다.")
+
+        old_sheets = xls_old.sheet_names
+        has_del = 'del' in old_sheets
+        has_status = 'Status' in old_sheets
+
+        if not has_del and not has_status:
+            raise ValueError("이전 데이터 파일에 'del' 시트와 'Status' 시트가 모두 없습니다. 최소 하나는 존재해야 합니다.")
+
+        df_new = xls_new.parse('Data')
+        if not has_del:
+            return df_new, has_del, has_status
+
+        try:
+            df_del = xls_old.parse('del', usecols=[SERIAL_COLUMN])
+        except Exception as e:
+            raise ValueError(
+                f"이전 데이터 파일의 'del' 시트에서 삭제 대상 컬럼을 읽을 수 없습니다: {e}"
+            ) from e
+
+        return filter_deleted_respondents_from_frame(df_new, df_del), has_del, has_status
 
 def get_pivot_df(pt):
     try:
@@ -47,9 +101,11 @@ def get_pivot_df(pt):
         except:
             body_range = None
             
-        if body_range is None: return pd.DataFrame()
+        if body_range is None:
+            return pd.DataFrame()
         body_val = ensure_2d(body_range.Value)
-        if not body_val or not body_val[0] or body_val[0][0] is None: return pd.DataFrame()
+        if not body_val or not body_val[0] or body_val[0][0] is None:
+            return pd.DataFrame()
         
         num_data_rows = len(body_val)
         num_data_cols = len(body_val[0])
@@ -63,7 +119,6 @@ def get_pivot_df(pt):
         
         # col_val 처리
         cols_labels = []
-        skip_labels = ["열 레이블", "Column Labels", "행 레이블", "Row Labels"]
         if col_range is not None:
             col_val = ensure_2d(col_range.Value)
             num_header_rows = len(col_val)
@@ -72,8 +127,9 @@ def get_pivot_df(pt):
                 label_parts = []
                 for i in range(num_header_rows):
                     v = col_val[i][j]
-                    if v is not None and str(v).strip() != "" and str(v).strip() not in skip_labels:
-                        label_parts.append(str(v).strip())
+                    label = str(v).strip() if v is not None else ""
+                    if label and label not in PIVOT_LABELS:
+                        label_parts.append(label)
                 cols_labels.append(" > ".join(label_parts) if label_parts else f"Col{j}")
         else:
             cols_labels = [f"Col{j+1}" for j in range(num_data_cols)]
@@ -92,8 +148,9 @@ def get_pivot_df(pt):
                 for row in row_val_data:
                     label_parts = []
                     for i, val in enumerate(row):
-                        if val is not None and str(val).strip() != "" and str(val).strip() not in skip_labels:
-                            last_values[i] = str(val).strip()
+                        label = str(val).strip() if val is not None else ""
+                        if label and label not in PIVOT_LABELS:
+                            last_values[i] = label
                         label_parts.append(last_values[i] if last_values[i] is not None else "")
                     processed_rows.append(" > ".join(label_parts))
             else:
@@ -106,7 +163,8 @@ def get_pivot_df(pt):
                     indent = cell.IndentLevel
                     label = str(row_val_data[i][0]).strip() if row_val_data[i][0] is not None else ""
                     
-                    if label in skip_labels: label = ""
+                    if label in PIVOT_LABELS:
+                        label = ""
                     
                     hierarchy[indent] = label
                     for d in list(hierarchy.keys()):
@@ -126,31 +184,39 @@ def get_pivot_df(pt):
 def write_diff_table_by_cells(ws_status, pt, old_pt):
     df_new = get_pivot_df(pt)
     df_old = get_pivot_df(old_pt)
-    if df_new.empty and df_old.empty: return False, "데이터 없음"
+    if df_new.empty and df_old.empty:
+        return False, "데이터 없음"
 
-    if df_old.empty: df_diff = df_new
-    elif df_new.empty: df_diff = -df_old
-    else: df_diff = df_new.subtract(df_old, fill_value=0)
+    if df_old.empty:
+        df_diff = df_new
+    elif df_new.empty:
+        df_diff = -df_old
+    else:
+        df_diff = df_new.subtract(df_old, fill_value=0)
     
     # 시작 위치 계산 (ColumnRange가 없으면 TableRange1 기준)
     try:
         start_row = pt.ColumnRange.Row
     except:
         try: start_row = pt.TableRange1.Row
-        except: return False, "위치 계산 실패"
+        except:
+            return False, "위치 계산 실패"
         
     try:
         start_col = pt.TableRange1.Column + pt.TableRange1.Columns.Count + 1
-    except: return False, "위치 계산 실패"
+    except:
+        return False, "위치 계산 실패"
     
     num_rows = len(df_diff)
     num_cols = len(df_diff.columns)
     data_to_write = [[None] * (num_cols + 1) for _ in range(num_rows + 1)]
     data_to_write[0][0] = "증감표"
-    for c, col_name in enumerate(df_diff.columns): data_to_write[0][c + 1] = col_name
-    for r, (row_name, row_data) in enumerate(df_diff.iterrows()):
-        data_to_write[r + 1][0] = row_name
-        for c, val in enumerate(row_data): data_to_write[r + 1][c + 1] = val
+    for column_index, column_name in enumerate(df_diff.columns, 1):
+        data_to_write[0][column_index] = column_name
+    for row_index, row in enumerate(df_diff.itertuples(name=None), 1):
+        row_name = df_diff.index[row_index - 1]
+        data_to_write[row_index][0] = row_name
+        data_to_write[row_index][1:] = row
             
     try:
         target_range = ws_status.Range(ws_status.Cells(start_row, start_col), 
@@ -180,25 +246,8 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
     error_pivots = []
 
     try:
-        # 1. 시트 존재 여부 사전 확인
-        with pd.ExcelFile(new_file) as xls_new:
-            if 'Data' not in xls_new.sheet_names:
-                raise ValueError("최신 데이터 파일에 'Data' 시트가 존재하지 않습니다.")
-        
-        with pd.ExcelFile(old_file) as xls_old:
-            old_sheets = xls_old.sheet_names
-            has_del = 'del' in old_sheets
-            has_status = 'Status' in old_sheets
-
-        if not has_del and not has_status:
-            raise ValueError("이전 데이터 파일에 'del' 시트와 'Status' 시트가 모두 없습니다. 최소 하나는 존재해야 합니다.")
-
-        # 2. 데이터 로드 및 필터링
-        df_new = pd.read_excel(new_file, sheet_name='Data')
-        if has_del:
-            df_updated = filter_deleted_respondents(df_new, old_file)
-        else:
-            df_updated = df_new
+        # 1~2. 각 파일을 한 번씩 열어 시트 확인, 데이터 로드, 삭제 필터링 수행
+        df_updated, has_del, has_status = load_excel_update_data(new_file, old_file)
 
         # 3. Excel 실행
         excel = win32com.client.DispatchEx("Excel.Application")
@@ -213,9 +262,11 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
         # 4. Data 시트 갱신
         ws_data = wb_new.Worksheets("Data")
         ws_data.UsedRange.ClearContents()
-        header = [df_updated.columns.tolist()]
-        data_values = [[clean_val(c) for c in row] for row in df_updated.values.tolist()]
-        ws_data.Range(ws_data.Cells(1, 1), ws_data.Cells(len(header) + len(data_values), len(header[0]))).Value = header + data_values
+        excel_values = dataframe_to_excel_values(df_updated)
+        ws_data.Range(
+            ws_data.Cells(1, 1),
+            ws_data.Cells(len(excel_values), len(excel_values[0])),
+        ).Value = excel_values
 
         # 5. 시트 복구 (존재하는 것만)
         if has_status:
@@ -257,10 +308,8 @@ def update_excel_data_with_pywin32(old_file, new_file, output_file):
 
         # 7. 저장
         ext = os.path.splitext(output_file)[1].lower()
-        file_format = 52 if ext == ".xlsm" else 51
+        file_format = EXCEL_FILE_FORMATS.get(ext, 51)
         wb_new.SaveAs(os.path.abspath(output_file), FileFormat=file_format)
-        
-    except Exception as e: raise e
     finally:
         if excel:
             try:
@@ -284,17 +333,17 @@ def build_excel_update_download(old_file, new_file):
         tmp_new_path = os.path.join(temp_dir, f"new{ext_new}")
         output_file_path = os.path.join(temp_dir, f"result{ext_new}")
 
-        with open(tmp_old_path, "wb") as f:
-            f.write(old_file.getvalue())
-        with open(tmp_new_path, "wb") as f:
-            f.write(new_file.getvalue())
+        with open(tmp_old_path, "wb") as old_output:
+            old_output.write(old_file.getvalue())
+        with open(tmp_new_path, "wb") as new_output:
+            new_output.write(new_file.getvalue())
 
         error_pivots = update_excel_data_with_pywin32(tmp_old_path, tmp_new_path, output_file_path)
         if not os.path.exists(output_file_path):
             raise FileNotFoundError("파일 생성에 실패했습니다.")
 
-        with open(output_file_path, "rb") as f:
-            result_data = f.read()
+        with open(output_file_path, "rb") as result_file:
+            result_data = result_file.read()
 
     return result_data, download_name, error_pivots
 
