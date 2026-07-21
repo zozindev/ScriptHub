@@ -4,3 +4,4 @@ pandas
 openpyxl
 pywin32
 extra-streamlit-components
+streamlit-sortables==0.3.1

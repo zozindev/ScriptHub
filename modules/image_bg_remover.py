@@ -56,7 +56,7 @@ def _clear_background_results():
 
 def image_bg_remover_page():
     with st.container():
-        st.markdown("#### 1. 이미지 업로드")
+        st.markdown("#### 이미지 업로드")
         uploaded_files = st.file_uploader(
             "흰색 배경을 투명하게 만들 이미지를 선택하세요", 
             type=["png", "jpg", "jpeg"], 
@@ -64,8 +64,6 @@ def image_bg_remover_page():
         )
         #st.info(f"💡 총 {len(uploaded_files) if uploaded_files else 0}개의 파일이 선택되었습니다.")
 
-    st.markdown("---")
-    
     if "processed_images" not in st.session_state:
         st.session_state.processed_images = []
     if "processed_image_previews" not in st.session_state:
@@ -73,13 +71,13 @@ def image_bg_remover_page():
     if "processed_images_zip" not in st.session_state:
         st.session_state.processed_images_zip = None
 
-    if st.button("🚀 배경 제거 시작", disabled=not uploaded_files):
+    if st.button("배경 제거", disabled=not uploaded_files, type="primary"):
         _clear_background_results()
         progress_bar = st.progress(0.0)
         status_text = st.empty()
         
         # 로그 창을 디폴트로 접어둠 (expanded=False)
-        with st.expander("📝 상세 작업 로그", expanded=False):
+        with st.expander("작업 로그", expanded=False):
             log_container = st.container()
             total_files = len(uploaded_files)
             results = {"success": 0, "failed": 0}
@@ -96,9 +94,9 @@ def image_bg_remover_page():
                     processed_image.close()
                     
                     out_filename = f"{Path(uploaded_file.name).stem}_nobg.png"
-                    return "success", f"✅ 완료: {uploaded_file.name}", (out_filename, data, preview_data)
+                    return "success", f"완료: {uploaded_file.name}", (out_filename, data, preview_data)
                 except Exception as e:
-                    return "failed", f"❌ 오류: {uploaded_file.name} ({str(e)})", None
+                    return "failed", f"오류: {uploaded_file.name} ({str(e)})", None
 
             max_workers = recommended_image_workers(total_files)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -131,19 +129,19 @@ def image_bg_remover_page():
             
             # 실패가 있는 경우 강조 표시
             if results["failed"] > 0:
-                st.error(f"⚠️ 작업 완료: 성공 {results['success']}, 실패 {results['failed']} - 일부 파일에서 오류가 발생했습니다. 로그를 확인하세요.")
+                st.error(f"작업 완료: 성공 {results['success']}, 실패 {results['failed']} - 일부 파일에서 오류가 발생했습니다. 로그를 확인하세요.")
             else:
-                st.success(f"🎉 모든 작업이 완료되었습니다! (성공: {results['success']})")
+                st.success(f"모든 작업이 완료되었습니다. (성공: {results['success']})")
 
     if st.session_state.processed_images:
-        st.markdown("### 📥 결과물 다운로드")
-        if st.button("🧹 배경 제거 결과 지우기", key="clear_background_results"):
+        st.markdown("### 결과 다운로드")
+        if st.button("결과 지우기", key="clear_background_results"):
             _clear_background_results()
             st.rerun()
         
         if len(st.session_state.processed_images) > 1:
             st.download_button(
-                label="🎁 전체 이미지 한번에 다운로드 (ZIP)",
+                label="전체 다운로드 (ZIP)",
                 data=st.session_state.processed_images_zip,
                 file_name="images_no_background.zip",
                 mime="application/zip",
@@ -159,7 +157,7 @@ def image_bg_remover_page():
             with cols[i % 5]:
                 st.image(previews_by_name[filename], caption=filename, use_container_width=True)
                 st.download_button(
-                    label="⬇️ 다운로드",
+                    label="다운로드",
                     data=data,
                     file_name=filename,
                     mime="image/png",

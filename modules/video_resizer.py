@@ -27,22 +27,20 @@ def _clear_video_results():
 def video_resizer_page():
     has_tools, reason = have_ffmpeg_tools()
     if not has_tools:
-        st.error(f"⚠️ FFmpeg 또는 FFprobe를 찾을 수 없습니다.")
+        st.error("FFmpeg 또는 FFprobe를 찾을 수 없습니다.")
         st.info(f"**상세 사유:** {reason}")
         return
 
     with st.container():
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.markdown("#### 1. 파일 업로드")
+            st.markdown("#### 파일 업로드")
             uploaded_files = st.file_uploader("변환할 MP4 파일을 선택하세요", type=["mp4"], accept_multiple_files=True)
         with col2:
-            st.markdown("#### 2. 설정")
+            st.markdown("#### 설정")
             target_res = st.selectbox("목표 해상도", list(RESOLUTIONS.keys()), index=2)
             #st.info("💡 3개 파일씩 병렬로 빠르게 처리됩니다.")
 
-    st.markdown("---")
-    
     if "converted_files" not in st.session_state:
         st.session_state.converted_files = []
     if "converted_files_zip" not in st.session_state:
@@ -50,7 +48,7 @@ def video_resizer_page():
     if "converted_resolution" not in st.session_state:
         st.session_state.converted_resolution = None
 
-    if st.button("🚀 변환 시작", disabled=not uploaded_files):
+    if st.button("변환", disabled=not uploaded_files, type="primary"):
         _clear_video_results()
         
         use_qsv = qsv_available()
@@ -61,7 +59,7 @@ def video_resizer_page():
         status_text = st.empty()
         
         # 로그 창을 디폴트로 접어둠 (expanded=False)
-        with st.expander("📝 상세 작업 로그", expanded=False):
+        with st.expander("작업 로그", expanded=False):
             log_container = st.container()
             
             total_files = len(uploaded_files)
@@ -76,10 +74,10 @@ def video_resizer_page():
                     
                     w, h, _ = probe_video(tmp_input_path)
                     if not w or not h:
-                        return "failed", f"❌ 분석 실패: {uploaded_file.name}", None
+                        return "failed", f"분석 실패: {uploaded_file.name}", None
                     
                     if w < target_w or h < target_h:
-                        return "skipped", f"⏭️ 스킵(업스케일 금지): {uploaded_file.name} ({w}x{h})", None
+                        return "skipped", f"스킵(업스케일 금지): {uploaded_file.name} ({w}x{h})", None
                     
                     out_filename = f"{Path(uploaded_file.name).stem}_{target_res}.mp4"
                     out_path = tmp_dir_path / f"output_{idx}.mp4"
@@ -97,16 +95,16 @@ def video_resizer_page():
                     if r.returncode == 0:
                         data = out_path.read_bytes()
                         fallback_note = " (QSV → x264 자동 전환)" if qsv_error and encoder == "x264" else ""
-                        return "success", f"✅ 완료: {uploaded_file.name}{fallback_note}", (out_filename, data)
+                        return "success", f"완료: {uploaded_file.name}{fallback_note}", (out_filename, data)
                     else:
-                        error_msg = f"❌ 변환 실패: {uploaded_file.name} (Exit Code: {r.returncode})"
+                        error_msg = f"변환 실패: {uploaded_file.name} (Exit Code: {r.returncode})"
                         error_detail = r.stderr or qsv_error
                         if error_detail:
                             stderr_tail = error_detail[-500:]
                             error_msg += f"\nError Detail:\n...{stderr_tail}"
                         return "failed", error_msg, None
                 except Exception as e:
-                    return "failed", f"❌ 오류: {uploaded_file.name} ({str(e)})", None
+                    return "failed", f"오류: {uploaded_file.name} ({str(e)})", None
 
             with tempfile.TemporaryDirectory() as tmp_dir:
                 tmp_dir_path = Path(tmp_dir)
@@ -139,20 +137,20 @@ def video_resizer_page():
             
             # 실패가 있는 경우 강조 표시
             if results["failed"] > 0:
-                st.error(f"⚠️ 작업 완료: 성공 {results['converted']}, 실패 {results['failed']} - 일부 파일에서 오류가 발생했습니다. 로그를 확인하세요.")
+                st.error(f"작업 완료: 성공 {results['converted']}, 실패 {results['failed']} - 일부 파일에서 오류가 발생했습니다. 로그를 확인하세요.")
             else:
-                st.success(f"🎉 모든 작업이 완료되었습니다! (성공: {results['converted']}, 스킵: {results['skipped']})")
+                st.success(f"모든 작업이 완료되었습니다. (성공: {results['converted']}, 스킵: {results['skipped']})")
 
     if st.session_state.converted_files:
-        st.markdown("### 📥 결과물 다운로드")
-        if st.button("🧹 변환 결과 지우기", key="clear_video_results"):
+        st.markdown("### 결과 다운로드")
+        if st.button("결과 지우기", key="clear_video_results"):
             _clear_video_results()
             st.rerun()
         
         # Grid layout for download buttons
         if len(st.session_state.converted_files) > 1:
             st.download_button(
-                label="🎁 전체 파일 한번에 다운로드 (ZIP)",
+                label="전체 다운로드 (ZIP)",
                 data=st.session_state.converted_files_zip,
                 file_name=f"resized_videos_{st.session_state.converted_resolution}.zip",
                 mime="application/zip",
@@ -166,7 +164,7 @@ def video_resizer_page():
         for i, (filename, data) in enumerate(st.session_state.converted_files):
             with cols[i % 3]:
                 st.download_button(
-                    label=f"⬇️ {filename}",
+                    label=filename,
                     data=data,
                     file_name=filename,
                     mime="video/mp4",

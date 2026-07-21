@@ -51,7 +51,7 @@ def convert_script_lines(lines):
 
 
 def script_converter_page():
-    st.markdown("<p style='color: black; font-size: 0.9rem; margin-bottom: 10px;'>보기 목록을 붙여넣으세요. (엔터 구분, (exe)는 배타적 보기, (other)는 기타 보기)</p>", unsafe_allow_html=True)
+    st.caption("보기 목록을 붙여넣으세요. 엔터로 구분하며, (exe)는 배타적 보기, (other)는 기타 보기입니다.")
     
     input_text = st.text_area(
         label="보기 목록 입력창", 
@@ -65,12 +65,12 @@ def script_converter_page():
         final_code_dim, final_code_nf = convert_script_lines(lines)
         
         # --- 1. Dimension 버전 출력 ---
-        st.subheader("🔹 Dimension ver")
+        st.subheader("Dimensions")
         st.code(final_code_dim)
 
-        st.markdown("<br><hr><br>", unsafe_allow_html=True) # 구분선
+        st.divider()
 
         # --- 2. Nfield 버전 출력 ---
-        st.subheader("🔸 Nfield ver")
+        st.subheader("Nfield")
         st.code(final_code_nf)
 

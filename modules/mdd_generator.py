@@ -167,7 +167,7 @@ def generate_mdd_script(df, template_dict):
     return "".join(script_blocks)
 
 def mdd_generator_page():
-    st.markdown("<p style='color: black; font-size: 0.9rem; margin-bottom: -10px;'>ScriptCoded.xlsx 문서 형식에 맞춰서 업로드하세요.</p>", unsafe_allow_html=True)
+    st.caption("ScriptCoded.xlsx 문서 형식에 맞춰 업로드하세요.")
 
     # 예시 파일 다운로드 버튼 추가
     # 현재 파일(modules/mdd_generator.py) 위치를 기준으로 template 폴더 경로 계산
@@ -176,7 +176,7 @@ def mdd_generator_page():
     try:
         with open(template_path, "rb") as f:
             st.download_button(
-                label="📁 ScriptCoded.xlsx 예시 파일 다운로드",
+                label="ScriptCoded.xlsx 예시 파일",
                 data=f,
                 file_name="ScriptCoded.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -219,7 +219,11 @@ def mdd_generator_page():
         df = pd.DataFrame(full_data)
 
         col1, col2, _ = st.columns([1.5, 1.5, 7])
-        generate_clicked = col1.button("🚀 MDD 스크립트 생성", use_container_width=True)
+        generate_clicked = col1.button(
+            "MDD 스크립트 생성",
+            use_container_width=True,
+            type="primary",
+        )
 
         if generate_clicked:
             final_script = generate_mdd_script(df, template_dict)

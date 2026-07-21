@@ -6,6 +6,7 @@ from urllib.parse import unquote
 
 import extra_streamlit_components as stx
 import streamlit as st
+from streamlit_sortables import sort_items
 
 ALL_MENU_DATA = [
     {
@@ -107,6 +108,96 @@ MENU_MODE_OPTIONS = [ALL_MENU_MODE, FAVORITE_MENU_MODE]
 FAVORITES_COOKIE_NAME = "scripthub_favorites"
 LEGACY_FAVORITES_COOKIE_NAME = "favorites"
 FAVORITES_COOKIE_DAYS = 365
+FAVORITE_SORTABLE_STYLE = """
+.sortable-component,
+.sortable-container,
+.sortable-container-body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.sortable-component.vertical {
+    display: block;
+}
+
+.sortable-component.vertical .sortable-container {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+    padding: 0;
+}
+
+.sortable-container-header {
+    margin: 0 0 8px;
+    padding: 0 2px;
+    background: transparent;
+    color: #86868b;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.sortable-container-body {
+    min-height: 54px;
+    padding: 6px;
+    border: 1px dashed #d2d2d7;
+    border-radius: 12px;
+    background: #f5f5f7;
+}
+
+.sortable-item {
+    display: flex;
+    align-items: center;
+    height: auto;
+    min-height: 40px;
+    margin: 0 0 6px;
+    padding: 10px 12px;
+    border: 1px solid #e5e5e7;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1d1d1f;
+    box-shadow: none;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 550;
+    line-height: 1.25;
+    cursor: grab;
+    user-select: none;
+}
+
+.sortable-item:last-child {
+    margin-bottom: 0;
+}
+
+.sortable-item:hover {
+    border-color: #b8b8bd;
+    background: #f5f5f7;
+    color: #1d1d1f;
+}
+
+.sortable-item:focus,
+.sortable-item:focus-visible {
+    border-color: #0a84ff;
+    background: #ffffff;
+    color: #1d1d1f;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.18);
+}
+
+.sortable-item:active {
+    cursor: grabbing;
+}
+
+.sortable-item.dragging {
+    border-color: #0a84ff;
+    background: #edf6ff;
+    opacity: 0.9;
+}
+"""
 MEDIA_RESULT_STATE_KEYS_BY_LABEL = {
     "BG Remover": (
         "processed_images",
@@ -145,177 +236,613 @@ def _inject_app_styles():
         """
         <style>
             @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-            
+
             :root {
-                --sh-primary: #2563eb;
-                --sh-primary-hover: #1d4ed8;
-                --sh-bg-sidebar: #f8fafc;
-                --sh-bg-main: #ffffff;
-                --sh-text-main: #0f172a;
-                --sh-text-muted: #64748b;
-                --sh-border: #e2e8f0;
-                --sh-card-bg: #ffffff;
-                --sh-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+                --sh-blue: #0071e3;
+                --sh-blue-hover: #0077ed;
+                --sh-blue-soft: #e8f2ff;
+                --sh-canvas: #f5f5f7;
+                --sh-surface: #ffffff;
+                --sh-surface-muted: #fbfbfd;
+                --sh-ink: #1d1d1f;
+                --sh-ink-secondary: #6e6e73;
+                --sh-ink-tertiary: #86868b;
+                --sh-line: rgba(0, 0, 0, 0.10);
+                --sh-line-strong: rgba(0, 0, 0, 0.16);
+                --sh-radius-sm: 10px;
+                --sh-radius-md: 16px;
+                --sh-radius-lg: 24px;
+                --sh-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 5px 16px rgba(0, 0, 0, 0.04);
+                --sh-shadow-md: 0 18px 45px rgba(0, 0, 0, 0.07);
             }
 
-            html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], .stMarkdown {
-                font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            html, body, [class*="css"], [data-testid="stAppViewContainer"],
+            [data-testid="stSidebar"], .stMarkdown {
+                font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                color: var(--sh-ink);
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
             }
 
-            /* 폰트가 아이콘을 덮어쓰지 않도록 예외 처리 */
+            [data-testid="stAppViewContainer"], .stApp {
+                background: var(--sh-canvas);
+            }
+
+            [data-testid="stHeader"] {
+                background: rgba(245, 245, 247, 0.82);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+                backdrop-filter: saturate(180%) blur(18px);
+                -webkit-backdrop-filter: saturate(180%) blur(18px);
+            }
+
+            [data-testid="stMainBlockContainer"] {
+                max-width: 1240px;
+                padding: 5.25rem 3rem 5rem;
+            }
+
             .stIcon, [data-testid="stIcon"], .material-icons {
-                font-family: inherit !important;
+                font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
             }
 
-            /* Code Block (Copy Card) Styling */
-            div[data-testid="stCodeBlock"] {
+            /* Sidebar */
+            [data-testid="stSidebar"] {
+                background: rgba(255, 255, 255, 0.94);
+                border-right: 1px solid var(--sh-line);
+            }
+
+            [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+                padding: 2rem 1rem 2.5rem;
+            }
+
+            .sh-brand {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.25rem 0.5rem 1.65rem;
+                user-select: none;
+            }
+
+            .sh-brand__mark {
+                display: grid;
+                place-items: center;
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                background: var(--sh-ink);
+                color: #fff;
+                font-size: 0.72rem;
+                font-weight: 750;
+                letter-spacing: -0.02em;
+            }
+
+            .sh-brand__name {
+                display: block;
+                color: var(--sh-ink);
+                font-size: 1.05rem;
+                font-weight: 720;
+                letter-spacing: -0.025em;
+                line-height: 1.1;
+            }
+
+            .sh-brand__caption {
+                display: block;
+                margin-top: 0.18rem;
+                color: var(--sh-ink-tertiary);
+                font-size: 0.7rem;
+                font-weight: 520;
+                letter-spacing: 0.03em;
+            }
+
+            [data-testid="stSidebar"] [data-testid="stSegmentedControl"] {
+                margin-bottom: 0.8rem;
+            }
+
+            [data-testid="stSidebar"] [data-testid="stSegmentedControl"] > div {
+                gap: 3px;
+                padding: 3px;
+                border: 0;
+                border-radius: 10px;
+                background: #ededf0;
+            }
+
+            [data-testid="stSidebar"] [data-testid="stSegmentedControl"] button {
+                min-height: 34px;
+                border: 0 !important;
                 border-radius: 8px !important;
-                border: 1px solid var(--sh-border) !important;
-                background-color: #f8fafc !important;
-                margin-bottom: 1rem !important;
+                font-size: 0.78rem;
+                font-weight: 620;
             }
 
-            div[data-testid="stCodeBlock"] code {
-                white-space: pre-wrap !important;
-                word-break: break-all !important;
-                font-size: 0.85rem !important;
-                color: #1e293b !important;
-                background-color: transparent !important;
-                padding: 1rem !important;
+            [data-testid="stSidebar"] hr {
+                margin: 0.8rem 0 1rem;
             }
 
-            /* Sidebar Styling */
-            div[data-testid="stSidebar"] {
-                background-color: var(--sh-bg-sidebar);
-                border-right: 1px solid var(--sh-border);
+            [data-testid="stSidebar"] .stButton {
+                margin-bottom: 0.18rem;
             }
 
-            div[data-testid="stSidebar"] h1 {
-                font-size: 1.5rem !important;
-                font-weight: 800 !important;
-                color: var(--sh-primary);
-                margin-bottom: 1.5rem !important;
-                padding-left: 0.5rem;
-            }
-
-            div[data-testid="stSidebar"] .stButton > button {
-                border: none;
-                background-color: transparent;
+            [data-testid="stSidebar"] .stButton > button {
+                min-height: 39px;
+                border: 0 !important;
+                background: transparent;
                 text-align: left;
-                padding: 0.6rem 0.75rem;
-                font-weight: 500;
-                color: #475569;
-                border-radius: 8px;
-                transition: all 0.2s;
+                justify-content: flex-start;
+                padding: 0.55rem 0.75rem;
+                color: #424245;
+                border-radius: 9px !important;
+                box-shadow: none !important;
+                font-size: 0.86rem;
+                font-weight: 520;
+                transition: background-color 140ms ease, color 140ms ease;
             }
 
-            div[data-testid="stSidebar"] .stButton > button:hover {
-                background-color: #f1f5f9;
-                color: var(--sh-primary);
+            [data-testid="stSidebar"] .stButton > button:hover {
+                background: #f0f0f2;
+                color: var(--sh-ink);
             }
 
-            div[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-                background-color: #eff6ff;
-                color: var(--sh-primary);
-                font-weight: 600;
+            [data-testid="stSidebar"] .stButton > button[kind="primary"] {
+                background: var(--sh-ink);
+                color: #fff;
+                font-weight: 640;
             }
 
-            /* Header Styling */
+            [data-testid="stSidebar"] [data-testid="stAlert"] {
+                margin: 0.5rem 0;
+                padding: 0.75rem;
+                border-radius: var(--sh-radius-sm);
+                font-size: 0.8rem;
+            }
+
+            /* Page header */
             .sh-page-header {
-                padding-bottom: 1.5rem;
-                margin-bottom: 2rem;
-                border-bottom: 1px solid var(--sh-border);
+                max-width: 880px;
+                padding: 0 0 2.5rem;
+                margin-bottom: 2.35rem;
             }
 
             .sh-page-header__meta {
-                display: inline-block;
-                background-color: #f1f5f9;
-                color: #475569;
-                font-size: 0.75rem;
-                font-weight: 600;
-                padding: 0.2rem 0.6rem;
-                border-radius: 4px;
-                margin-bottom: 0.75rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.8rem;
+                color: var(--sh-blue);
+                font-size: 0.72rem;
+                font-weight: 700;
                 text-transform: uppercase;
-                letter-spacing: 0.025em;
+                letter-spacing: 0.1em;
+            }
+
+            .sh-page-header__meta::before {
+                content: '';
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: currentColor;
             }
 
             .sh-page-header__title {
-                font-size: 2.25rem;
-                font-weight: 800;
-                color: var(--sh-text-main);
+                color: var(--sh-ink);
+                font-size: clamp(2.15rem, 4vw, 3.35rem);
+                font-weight: 740;
+                line-height: 1.04;
+                letter-spacing: -0.055em;
                 margin: 0;
-                letter-spacing: -0.025em;
             }
 
             .sh-page-header__description {
-                font-size: 1.05rem;
-                color: var(--sh-text-muted);
-                margin-top: 0.5rem;
-                line-height: 1.6;
-                max-width: 800px;
+                max-width: 720px;
+                margin: 1rem 0 0;
+                color: var(--sh-ink-secondary);
+                font-size: 1.04rem;
+                font-weight: 420;
+                line-height: 1.65;
+                letter-spacing: -0.012em;
             }
 
-            /* Dashboard Cards */
+            /* Typography and layout */
+            h1, h2, h3, h4, h5, h6 {
+                color: var(--sh-ink) !important;
+                letter-spacing: -0.035em !important;
+            }
+
+            h2, h3, h4 {
+                font-weight: 680 !important;
+            }
+
+            .stMarkdown p, [data-testid="stCaptionContainer"] {
+                color: var(--sh-ink-secondary);
+                line-height: 1.65;
+            }
+
+            label, [data-testid="stWidgetLabel"] p {
+                color: #424245 !important;
+                font-size: 0.84rem !important;
+                font-weight: 600 !important;
+                letter-spacing: -0.012em;
+            }
+
+            hr {
+                border-color: var(--sh-line) !important;
+            }
+
+            [data-testid="stHorizontalBlock"] {
+                gap: 1.15rem;
+            }
+
+            .sh-section-title {
+                margin: 3rem 0 1.2rem;
+            }
+
+            .sh-section-title span,
+            .sh-result-group span {
+                display: block;
+                margin-bottom: 0.25rem;
+                color: var(--sh-blue);
+                font-size: 0.7rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.09em;
+            }
+
+            .sh-section-title strong,
+            .sh-result-group strong {
+                color: var(--sh-ink);
+                font-size: 1.25rem;
+                font-weight: 680;
+                letter-spacing: -0.025em;
+            }
+
+            .sh-result-group {
+                margin: 1.5rem 0 0.8rem;
+            }
+
+            /* Overview */
             .sh-card {
-                background-color: var(--sh-card-bg);
-                border: 1px solid var(--sh-border);
-                border-radius: 12px;
-                padding: 1.5rem;
+                position: relative;
+                display: block;
+                min-height: 185px;
                 height: 100%;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow: var(--sh-card-shadow);
+                padding: 1.5rem;
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: var(--sh-surface);
+                box-shadow: var(--sh-shadow-sm);
+                color: inherit !important;
+                text-decoration: none !important;
+                cursor: pointer;
+                transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+            }
+
+            .sh-card::after {
+                content: '→';
+                position: absolute;
+                top: 1.4rem;
+                right: 1.45rem;
+                color: var(--sh-ink-tertiary);
+                font-size: 0.95rem;
+                line-height: 1;
+                opacity: 0;
+                transform: translateX(-4px);
+                transition: opacity 180ms ease, transform 180ms ease, color 180ms ease;
             }
 
             .sh-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-                border-color: #bfdbfe;
+                transform: translateY(-2px);
+                border-color: var(--sh-line-strong);
+                box-shadow: var(--sh-shadow-md);
+            }
+
+            .sh-card:hover::after,
+            .sh-card:focus-visible::after {
+                color: var(--sh-blue);
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            .sh-card:focus-visible {
+                outline: 3px solid rgba(0, 113, 227, 0.2);
+                outline-offset: 2px;
             }
 
             .sh-card__icon {
-                font-size: 1.5rem;
-                margin-bottom: 1rem;
-                display: block;
+                display: inline-grid;
+                place-items: center;
+                width: 32px;
+                height: 32px;
+                margin-bottom: 1.2rem;
+                border-radius: 9px;
+                background: var(--sh-canvas);
+                color: var(--sh-ink-secondary);
+                font-size: 0.7rem;
+                font-weight: 700;
+                letter-spacing: 0.06em;
             }
 
             .sh-card__title {
-                font-size: 1.125rem;
-                font-weight: 700;
-                color: var(--sh-text-main);
+                display: block;
                 margin-bottom: 0.5rem;
+                color: var(--sh-ink);
+                font-size: 1.06rem;
+                font-weight: 680;
+                letter-spacing: -0.025em;
             }
 
             .sh-card__desc {
-                font-size: 0.9rem;
-                color: var(--sh-text-muted);
-                line-height: 1.5;
+                display: block;
+                margin-bottom: 0.5rem;
+                color: var(--sh-ink-secondary);
+                font-size: 0.84rem;
+                line-height: 1.55;
             }
 
             .sh-badge {
                 display: inline-block;
-                font-size: 0.7rem;
-                font-weight: 600;
-                padding: 0.1rem 0.4rem;
-                border-radius: 4px;
-                margin-top: 1rem;
+                margin-top: 0.75rem;
+                color: var(--sh-ink-tertiary);
+                font-size: 0.67rem;
+                font-weight: 650;
+                letter-spacing: 0.035em;
+                text-transform: uppercase;
             }
 
-            .sh-badge--media { background-color: #fef3c7; color: #92400e; }
-            .sh-badge--script { background-color: #dcfce7; color: #166534; }
-            .sh-badge--validation { background-color: #fee2e2; color: #991b1b; }
-            .sh-badge--data { background-color: #e0f2fe; color: #075985; }
-            .sh-badge--overview { background-color: #f1f5f9; color: #475569; }
+            .sh-overview-footer {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 1rem;
+                margin-top: 0.75rem;
+            }
 
-            /* Streamlit overrides */
-            div[data-testid="stForm"] {
+            .sh-overview-footer__item {
+                padding: 1.25rem 1.35rem;
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: rgba(255, 255, 255, 0.68);
+            }
+
+            .sh-overview-footer__label {
+                display: block;
+                margin-bottom: 0.45rem;
+                color: var(--sh-ink-tertiary);
+                font-size: 0.66rem;
+                font-weight: 700;
+                letter-spacing: 0.09em;
+                text-transform: uppercase;
+            }
+
+            .sh-overview-footer__item p {
+                margin: 0;
+                color: #424245;
+                font-size: 0.84rem;
+                line-height: 1.6;
+            }
+
+            /* Inputs */
+            [data-baseweb="input"] > div,
+            [data-baseweb="textarea"] > div,
+            [data-baseweb="select"] > div,
+            [data-baseweb="base-input"] {
+                border-color: var(--sh-line-strong) !important;
+                border-radius: var(--sh-radius-sm) !important;
+                background: var(--sh-surface) !important;
+                box-shadow: none !important;
+                transition: border-color 140ms ease, box-shadow 140ms ease;
+            }
+
+            [data-baseweb="input"] > div:focus-within,
+            [data-baseweb="textarea"] > div:focus-within,
+            [data-baseweb="select"] > div:focus-within,
+            [data-baseweb="base-input"]:focus-within {
+                border-color: var(--sh-blue) !important;
+                box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.13) !important;
+            }
+
+            input, textarea {
+                color: var(--sh-ink) !important;
+                caret-color: var(--sh-blue);
+            }
+
+            [data-testid="stFileUploaderDropzone"] {
+                min-height: 116px;
+                padding: 1.25rem;
+                border: 1px dashed var(--sh-line-strong);
+                border-radius: var(--sh-radius-md);
+                background: rgba(255, 255, 255, 0.72);
+            }
+
+            [data-testid="stFileUploaderDropzone"] button {
+                border: 1px solid var(--sh-line-strong) !important;
+                background: var(--sh-surface) !important;
+                color: var(--sh-ink) !important;
+                box-shadow: none !important;
+            }
+
+            [data-testid="stFileUploaderFile"] {
+                border-radius: var(--sh-radius-sm);
+                background: var(--sh-surface);
+            }
+
+            /* Buttons */
+            .stButton > button,
+            .stDownloadButton > button {
+                min-height: 42px;
+                padding: 0.58rem 1rem;
+                border: 1px solid var(--sh-line-strong) !important;
+                border-radius: 12px !important;
+                background: var(--sh-surface);
+                color: var(--sh-ink);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+                font-size: 0.86rem;
+                font-weight: 620;
+                transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+            }
+
+            .stButton > button:hover,
+            .stDownloadButton > button:hover {
+                border-color: rgba(0, 0, 0, 0.24) !important;
+                background: #fafafa;
+                color: var(--sh-ink);
+            }
+
+            .stButton > button:active,
+            .stDownloadButton > button:active {
+                transform: scale(0.985);
+            }
+
+            .stButton > button[kind="primary"],
+            .stDownloadButton > button[kind="primary"] {
+                border-color: var(--sh-blue) !important;
+                background: var(--sh-blue);
+                color: #fff;
+                box-shadow: none;
+            }
+
+            .stButton > button[kind="primary"]:hover,
+            .stDownloadButton > button[kind="primary"]:hover {
+                border-color: var(--sh-blue-hover) !important;
+                background: var(--sh-blue-hover);
+                color: #fff;
+            }
+
+            .stButton > button:disabled,
+            .stDownloadButton > button:disabled {
+                opacity: 0.45;
+                transform: none;
+            }
+
+            /* Results and content surfaces */
+            div[data-testid="stCodeBlock"] {
+                margin-bottom: 1rem !important;
+                border: 1px solid var(--sh-line) !important;
+                border-radius: var(--sh-radius-md) !important;
+                background: #1d1d1f !important;
+                box-shadow: var(--sh-shadow-sm);
+                overflow: hidden;
+            }
+
+            div[data-testid="stCodeBlock"] pre,
+            div[data-testid="stCodeBlock"] code {
+                background: transparent !important;
+            }
+
+            div[data-testid="stCodeBlock"] code {
+                padding: 1.05rem 1.15rem !important;
+                color: #f5f5f7 !important;
+                font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
+                font-size: 0.82rem !important;
+                line-height: 1.62 !important;
+                white-space: pre-wrap !important;
+                word-break: break-word !important;
+            }
+
+            [data-testid="stExpander"] {
+                border: 1px solid var(--sh-line) !important;
+                border-radius: var(--sh-radius-md) !important;
+                background: rgba(255, 255, 255, 0.72);
+                overflow: hidden;
+            }
+
+            [data-testid="stExpander"] summary {
+                font-size: 0.86rem;
+                font-weight: 620;
+            }
+
+            [data-testid="stTabs"] [data-baseweb="tab-list"] {
+                gap: 0.25rem;
+                padding: 3px;
                 border-radius: 12px;
-                background-color: #f8fafc;
-                border: 1px solid var(--sh-border);
+                background: #eaeaed;
             }
 
-            .stButton > button {
-                border-radius: 8px !important;
+            [data-testid="stTabs"] [data-baseweb="tab"] {
+                min-height: 38px;
+                padding: 0.45rem 0.9rem;
+                border-radius: 9px;
+                color: var(--sh-ink-secondary);
+                font-size: 0.84rem;
+                font-weight: 600;
+            }
+
+            [data-testid="stTabs"] [aria-selected="true"] {
+                background: var(--sh-surface);
+                color: var(--sh-ink);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+
+            [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+            [data-testid="stTabs"] [data-baseweb="tab-border"] {
+                display: none;
+            }
+
+            /* CookieManager hides every zero-height component container. Keep the
+               sortable visible long enough to measure and report its own height. */
+            .element-container:has(
+                iframe[title="streamlit_sortables.sortable_items"]
+            ) {
+                display: block !important;
+            }
+
+            [data-testid="stAlert"] {
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: rgba(255, 255, 255, 0.78);
+                box-shadow: none;
+            }
+
+            [data-testid="stProgress"] > div > div {
+                background: var(--sh-blue);
+            }
+
+            [data-testid="stImage"] img {
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: var(--sh-surface);
+            }
+
+            [data-testid="stDataFrame"],
+            [data-testid="stTable"] {
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: var(--sh-surface);
+                overflow: hidden;
+            }
+
+            div[data-testid="stForm"] {
+                border: 1px solid var(--sh-line);
+                border-radius: var(--sh-radius-md);
+                background: var(--sh-surface-muted);
+            }
+
+            @media (max-width: 768px) {
+                [data-testid="stMainBlockContainer"] {
+                    padding: 4.5rem 1rem 3rem;
+                }
+
+                .sh-page-header {
+                    padding-bottom: 1.5rem;
+                    margin-bottom: 1.5rem;
+                }
+
+                .sh-page-header__title {
+                    font-size: 2.15rem;
+                }
+
+                .sh-page-header__description {
+                    font-size: 0.94rem;
+                }
+
+                .sh-overview-footer {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                *, *::before, *::after {
+                    scroll-behavior: auto !important;
+                    transition-duration: 0.01ms !important;
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                }
             }
         </style>
         """,
@@ -401,30 +928,6 @@ def _mark_favorites_dirty():
     st.session_state.favorites_dirty = True
 
 
-def _move_favorite(label, offset):
-    if label not in st.session_state.favorites:
-        return
-
-    current_index = st.session_state.favorites.index(label)
-    target_index = current_index + offset
-    if target_index < 0 or target_index >= len(st.session_state.favorites):
-        return
-
-    st.session_state.favorites[current_index], st.session_state.favorites[target_index] = (
-        st.session_state.favorites[target_index],
-        st.session_state.favorites[current_index],
-    )
-    _mark_favorites_dirty()
-
-
-def _toggle_favorite(label):
-    if label in st.session_state.favorites:
-        st.session_state.favorites.remove(label)
-    else:
-        st.session_state.favorites.append(label)
-    _mark_favorites_dirty()
-
-
 def _render_menu_buttons(menu_items, key_prefix):
     for menu in menu_items:
         label = menu["label"]
@@ -454,64 +957,50 @@ def _render_favorite_menu_list():
     _render_menu_buttons(favorite_items, "nav_favorites")
 
 
-def _render_favorite_order_editor():
-    st.caption("즐겨찾기 순서")
+def _render_favorite_drag_editor():
+    current_order = list(st.session_state.favorites)
+    favorite_set = set(current_order)
+    current_containers = [
+        {"header": "즐겨찾기", "items": current_order},
+        {
+            "header": "추가 가능한 메뉴",
+            "items": [label for label in MENU_LABELS if label not in favorite_set],
+        },
+    ]
+    sorted_containers = sort_items(
+        current_containers,
+        multi_containers=True,
+        direction="vertical",
+        custom_style=FAVORITE_SORTABLE_STYLE,
+        key="favorite_drag_editor",
+    )
 
-    if not st.session_state.favorites:
-        st.info("아래 메뉴 목록에서 별을 눌러 즐겨찾기를 추가하세요.")
+    if (
+        not isinstance(sorted_containers, list)
+        or len(sorted_containers) != 2
+        or not all(isinstance(container, dict) for container in sorted_containers)
+    ):
         return
 
-    for index, label in enumerate(list(st.session_state.favorites)):
-        col_up, col_down, col_label = st.columns([0.16, 0.16, 0.68])
+    favorite_items = sorted_containers[0].get("items", [])
+    available_items = sorted_containers[1].get("items", [])
+    all_items = favorite_items + available_items
+    has_valid_partition = (
+        len(all_items) == len(MENU_LABELS)
+        and len(set(all_items)) == len(MENU_LABELS)
+        and set(all_items) == MENU_LABEL_SET
+    )
 
-        with col_up:
-            st.button(
-                "↑",
-                key=f"fav_up_{label}",
-                disabled=index == 0,
-                on_click=_move_favorite,
-                args=(label, -1),
-            )
-
-        with col_down:
-            is_last = index == len(st.session_state.favorites) - 1
-            st.button(
-                "↓",
-                key=f"fav_down_{label}",
-                disabled=is_last,
-                on_click=_move_favorite,
-                args=(label, 1),
-            )
-
-        with col_label:
-            st.write(label)
-
-
-def _render_favorite_toggle_editor():
-    st.caption("전체 메뉴")
-
-    for menu in ALL_MENU_DATA:
-        label = menu["label"]
-        is_favorite = label in st.session_state.favorites
-        col_star, col_label = st.columns([0.16, 0.84])
-
-        with col_star:
-            st.button(
-                "★" if is_favorite else "☆",
-                key=f"fav_toggle_{label}",
-                on_click=_toggle_favorite,
-                args=(label,),
-            )
-
-        with col_label:
-            st.write(label)
+    if has_valid_partition and favorite_items != current_order:
+        st.session_state.favorites = favorite_items
+        _mark_favorites_dirty()
+        st.rerun()
 
 
 def _render_favorite_edit_mode():
     st.subheader("즐겨찾기 편집")
-    _render_favorite_order_editor()
-    st.divider()
-    _render_favorite_toggle_editor()
+    st.caption("메뉴를 끌어 즐겨찾기를 편집하세요.")
+    _render_favorite_drag_editor()
     st.divider()
 
     if st.button("편집 완료", use_container_width=True, type="primary"):
@@ -536,10 +1025,23 @@ def _init_session_state():
         st.session_state.last_saved_favorites = None
 
 
+def _apply_requested_menu():
+    requested_menu = st.query_params.get("tool")
+    if isinstance(requested_menu, list):
+        requested_menu = requested_menu[-1] if requested_menu else None
+
+    if requested_menu in MENU_LABEL_SET:
+        st.session_state.selected_menu = requested_menu
+
+    if "tool" in st.query_params:
+        del st.query_params["tool"]
+
+
 def main():
     st.set_page_config(page_title="ScriptHub", page_icon="📚", layout="wide")
     _inject_app_styles()
     _init_session_state()
+    _apply_requested_menu()
 
     cookie_manager = stx.CookieManager(key="scripthub_cookie_manager")
 
@@ -553,8 +1055,18 @@ def main():
         st.session_state.favorites_dirty = False
 
     with st.sidebar:
-        st.markdown("<h1 style='font-size: 2rem;'>ScriptHub</h1>", unsafe_allow_html=True)
-        #st.caption("메뉴 모드")
+        st.markdown(
+            """
+            <div class="sh-brand">
+                <span class="sh-brand__mark">SH</span>
+                <span>
+                    <span class="sh-brand__name">ScriptHub</span>
+                    <span class="sh-brand__caption">WORKSPACE</span>
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         view_mode = st.segmented_control(
             "메뉴 모드",
             MENU_MODE_OPTIONS,

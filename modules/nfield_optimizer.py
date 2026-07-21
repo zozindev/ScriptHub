@@ -21,7 +21,7 @@ EXCESSIVE_NEWLINES_RE = re.compile(r'\n{4,}')
 
 
 def nfield_optimizer_page():
-    st.markdown("<p style='color: black; font-size: 0.9rem; margin-bottom: -10px;'>Nfield Qlib (.txt, .q) 파일을 업로드 하세요.</p>", unsafe_allow_html=True)
+    st.caption("Nfield Qlib 파일(.txt, .q)을 업로드하세요.")
     
     uploaded_txt = st.file_uploader(label="Nfield 텍스트 파일 업로드", label_visibility="collapsed", type=["txt", "q"])
 
@@ -182,10 +182,10 @@ def nfield_optimizer_page():
         final_text = "\n".join(processed_lines)
         final_text = EXCESSIVE_NEWLINES_RE.sub('\n\n\n', final_text)
 
-        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 1rem'></div>", unsafe_allow_html=True)
         col1, col2, _ = st.columns([3, 3, 4])
         with col1:
-            st.download_button(label="📥 정리된 파일 다운로드", data=final_text, file_name=f"fixed_{uploaded_txt.name}", mime="text/plain", use_container_width=True)
+            st.download_button(label="정리된 파일 다운로드", data=final_text, file_name=f"fixed_{uploaded_txt.name}", mime="text/plain", use_container_width=True)
         with col2: copy_to_clipboard(final_text)
             
         st.code(final_text)

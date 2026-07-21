@@ -234,18 +234,18 @@ def qlib_to_mdd_page():
             return # 오류 발생 시 이후 로직 중단
         # -----------------------------------------------------
 
-        if st.button("🚀 변환 시작", type="primary", use_container_width=True):
+        if st.button("변환", type="primary", use_container_width=True):
             with st.spinner("스크립트 변환 중..."):
                 try:
                     # AutoQlib.py의 핵심 처리 로직 호출 (process_script_content 사용)
                     result_content = process_script_content(content_str) 
                     
-                    st.success("🎉 변환이 완료되었습니다!")
+                    st.success("변환이 완료되었습니다.")
                     
                     # 결과물 다운로드 버튼 (AutoQlib.py 처럼 '_변경.txt' 파일명 사용, UTF-8로 인코딩)
                     new_filename = f"{Path(uploaded_file.name).stem}_변경.txt"
                     st.download_button(
-                        label="📥 변환된 파일 다운로드",
+                        label="변환된 파일 다운로드",
                         data=result_content.encode("utf-8"), # 다운로드 시에는 UTF-8로 인코딩
                         file_name=new_filename,
                         mime="text/plain",
@@ -253,14 +253,14 @@ def qlib_to_mdd_page():
                     )
                     
                     # 미리보기 (선택 사항)
-                    with st.expander("📝 결과물 미리보기"):
+                    with st.expander("결과 미리보기"):
                         st.text_area("변환된 내용", result_content, height=400)
                         st.caption("위 내용을 선택하여 복사하거나 아래 버튼을 참고하세요.")
-                        if st.button("📋 복사 모드 안내"):
+                        if st.button("복사 방법"):
                             st.info("텍스트 영역을 클릭하고 `Ctrl+A`를 눌러 전체 선택 후 `Ctrl+C`로 복사하세요.")
                         
                 except Exception as e:
-                    st.error(f"❌ 변환 중 오류가 발생했습니다: {str(e)}")
+                    st.error(f"변환 중 오류가 발생했습니다: {str(e)}")
                     st.exception(e)
 
 def modify_info_lines(modified_lines):

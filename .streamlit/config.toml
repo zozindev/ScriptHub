@@ -1,0 +1,14 @@
+[theme]
+base = "light"
+primaryColor = "#0071E3"
+backgroundColor = "#F5F5F7"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1D1D1F"
+font = "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+headingFont = "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+baseFontSize = 16
+baseRadius = "0.875rem"
+buttonRadius = "0.75rem"
+borderColor = "#D2D2D7"
+showWidgetBorder = true
+showSidebarBorder = true

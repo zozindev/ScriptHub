@@ -24,7 +24,7 @@ def image_resizer_page():
     if "resized_images_zip" not in st.session_state:
         st.session_state.resized_images_zip = None
 
-    if st.button("🚀 리사이즈 실행"):
+    if st.button("리사이즈", type="primary"):
         if not uploaded_files:
             st.warning("이미지 파일을 선택하세요.")
             return
@@ -49,18 +49,17 @@ def image_resizer_page():
         st.session_state.resized_images = deduplicate_filenames(st.session_state.resized_images)
         st.session_state.resized_images_zip = build_zip_bytes(st.session_state.resized_images)
         
-        st.success("리사이즈 완료!")
+        st.success("리사이즈가 완료되었습니다.")
 
     if st.session_state.resized_images:
-        st.markdown("---")
-        st.markdown("### 📥 결과물 다운로드")
-        if st.button("🧹 리사이즈 결과 지우기", key="clear_resized_results"):
+        st.markdown("### 결과 다운로드")
+        if st.button("결과 지우기", key="clear_resized_results"):
             _clear_resized_results()
             st.rerun()
         
         # 전체 다운로드 (ZIP)
         st.download_button(
-            label="🎁 전체 파일 한번에 다운로드 (ZIP)",
+            label="전체 다운로드 (ZIP)",
             data=st.session_state.resized_images_zip,
             file_name="resized_images.zip",
             mime="application/zip",
@@ -74,7 +73,7 @@ def image_resizer_page():
         for i, (filename, data) in enumerate(st.session_state.resized_images):
             with cols[i % 3]:
                 st.download_button(
-                    label=f"⬇️ {filename}",
+                    label=filename,
                     data=data,
                     file_name=filename,
                     mime="image/jpeg",

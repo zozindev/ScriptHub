@@ -45,14 +45,17 @@ def dimensions_link_page():
     live_test_url = f"{config['LiveTestA']}{live_test_query}"
     live_real_url = f"{config['LiveA']}{live_real_query}"
 
-    st.markdown("---")
-    
-    # Results Sections
-    st.markdown("### 🌐 Server Address")
+    st.markdown(
+        '<div class="sh-section-title"><span>Links</span><strong>Server address</strong></div>',
+        unsafe_allow_html=True,
+    )
     
     # 실제 설문 링크 섹션
     with st.container():
-        st.markdown("<div style='padding: 0.5rem 0; border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1rem;'><strong style='color: #1d4ed8;'>실제 설문 링크 (Scripting & Preview)</strong></div>", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="sh-result-group"><span>Survey</span><strong>Scripting &amp; Preview</strong></div>',
+            unsafe_allow_html=True,
+        )
         link_col1, link_col2 = st.columns(2)
         with link_col1:
             st.caption("Scripting 서버")
@@ -61,11 +64,12 @@ def dimensions_link_page():
             st.caption("Preview 서버")
             st.code(preview_url, language="text")
     
-    st.markdown("<br>", unsafe_allow_html=True)
-
     # 배포용 링크 섹션
     with st.container():
-        st.markdown("<div style='padding: 0.5rem 0; border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem;'><strong style='color: #047857;'>배포용 링크 (Live Server)</strong></div>", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="sh-result-group"><span>Deploy</span><strong>Live Server</strong></div>',
+            unsafe_allow_html=True,
+        )
         link_col3, link_col4 = st.columns(2)
         with link_col3:
             st.caption("Live 서버 테스트용 (패널아이디 포함)")
@@ -74,10 +78,8 @@ def dimensions_link_page():
             st.caption("Live 서버 실사용")
             st.code(live_real_url, language="text")
 
-    st.markdown("---")
-    
     # 2단계 섹션: Compile & Data와 FTP를 카드 느낌으로 배치
-    tab1, tab2 = st.tabs(["🛠️ Compile & Data", "📂 FTP Address"])
+    tab1, tab2 = st.tabs(["Compile & Data", "FTP Address"])
     
     with tab1:
         c_col1, c_col2 = st.columns(2)

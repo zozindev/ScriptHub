@@ -352,13 +352,13 @@ def excel_updater_page():
     with col1: old_file = st.file_uploader("**이전 데이터**", type=["xlsm", "xlsx"], key="old_excel")
     with col2: new_file = st.file_uploader("**최신 데이터**", type=["xlsm", "xlsx"], key="new_excel")
         
-    if st.button("🚀 업데이트 실행"):
+    if st.button("업데이트", type="primary"):
         if old_file and new_file:
             with st.spinner("엑셀 업데이트 진행 중..."):
                 try:
                     result_data, download_name, error_pivots = build_excel_update_download(old_file, new_file)
                     st.download_button(
-                        label="📥 업데이트된 파일 다운로드",
+                        label="업데이트된 파일 다운로드",
                         data=result_data,
                         file_name=download_name,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

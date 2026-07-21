@@ -74,9 +74,9 @@ def html_validator_page():
                     link_cell.font = link_font
                 wb.save(output)
                 output.seek(0)
-                st.error(f"✅ 총 {len(error_log)}개의 에러 발견!")
+                st.error(f"총 {len(error_log)}개의 오류를 발견했습니다.")
                 st.download_button("결과 파일 다운로드", output, f"checked_{uploaded_file.name}")
             else:
-                st.success("🎉 모든 태그가 정상입니다!")
+                st.success("모든 태그가 정상입니다.")
         finally:
             wb.close()
