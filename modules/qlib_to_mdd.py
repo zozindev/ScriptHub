@@ -8,11 +8,9 @@ import streamlit as st
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "template"
 
 
-# 파일에서 템플릿을 읽어와서 리스트에 추가하는 함수 (AutoQlib.py와 동일한 인코딩 시도 로직 적용)
 @lru_cache(maxsize=None)
 def _load_template(template_name):
     template_path = TEMPLATE_DIR / f"{template_name}.txt"
-
     for encoding in ("utf-8", "utf-16", "cp1252", "latin1"):
         try:
             return tuple(template_path.read_text(encoding=encoding).splitlines())
@@ -31,9 +29,26 @@ def xRank_template(xRank, lines):
     lines.extend(_load_template(xRank))
     return lines
 
-# -----------------------------------------------------------------------------
-# 메인 처리 함수 (AutoQlib.py의 modify_text_file 로직을 Streamlit용으로 포팅)
-# -----------------------------------------------------------------------------
+
+def _is_rank_start(lines, i):
+    """실제 dynamicgrid 랭크 구조가 시작되는지 판별(문항명에 XRANK가 있어도
+    info/text/rowpicker 등 다른 문항이면 랭크로 오인하지 않도록 방지)."""
+    j = i
+    limit = min(len(lines), i + 80)
+    while j < limit:
+        s = lines[j]
+        if 'metatype="dynamicgrid"' in s:
+            return True
+        low = s.strip().lower()
+        if (low == 'info;' or low.startswith('text;') or low.startswith('text ')
+                or low.startswith('long ') or low.startswith('long[')
+                or low.startswith('long;') or low.startswith('categorical')
+                or 'metatype="rowpicker"' in s or 'metatype="autosum"' in s):
+            return False
+        j += 1
+    return False
+
+
 def process_script_content(content):
     lines1 = content.splitlines()
     lines1 = [line for line in lines1 if 'ANALYSIS:' not in line]
@@ -51,25 +66,29 @@ def process_script_content(content):
     while i < len(lines):
         line = lines[i]
         modified_lines.append(line)
-        
+
         if i > 0:
             prev_line = lines[i-1]
-            if ("xRank" in prev_line or "XRANK" in prev_line or "xRANK" in prev_line) and "xRANK##" not in prev_line and "xRank##" not in prev_line:
+            if ("xRank" in prev_line or "XRANK" in prev_line or "xRANK" in prev_line) and "xRANK##" not in prev_line and "xRank##" not in prev_line and _is_rank_start(lines, i):
                 bool_start = True
-                if prev_line.endswith('"'):
+                prev_line_core = re.sub(r'\s*x?rank\s*$', '', prev_line, flags=re.IGNORECASE).rstrip()
+                if prev_line_core.endswith('"'):
                     xRank_type = 1
                 else:
                     search_idx = i
                     xRank_type = 1
                     while search_idx < len(lines):
                         xline = lines[search_idx]
+                        xstrip = xline.lstrip()
+                        if xstrip.startswith('loop') or xstrip.startswith('[') or xstrip.startswith('{'):
+                            break
                         xRank_type += 1
                         if xline.endswith('"'):
                             break
                         search_idx += 1
 
         if i > 0 and ("xRank" in lines[i-1] or "XRANK" in lines[i-1] or "xRANK" in lines[i-1]) and \
-           "xRANK##" not in lines[i-1] and "XRANK##" not in lines[i-1] and "xRank##" not in lines[i-1] and xRank_type == 1:
+           "xRANK##" not in lines[i-1] and "XRANK##" not in lines[i-1] and "xRank##" not in lines[i-1] and xRank_type == 1 and _is_rank_start(lines, i):
             bool_start = True
             copy_start = True
             xRank_copy_lines.append(lines[i-1])
@@ -81,13 +100,15 @@ def process_script_content(content):
                 elif 'USE ORDER2' in upper_line: if_order_type = 2; break
                 elif 'USE ORDER3' in upper_line: if_order_type = 3; break
                 j += 1
-            
+
             if if_order_type == 1: xRank_lines = xRank_template("xRank1", xRank_lines)
             elif if_order_type == 2: xRank_lines = xRank_template("xRank2", xRank_lines)
             elif if_order_type == 3: xRank_lines = xRank_template("xRank3", xRank_lines)
-            
+
             xRank_copy_lines = copy_line(xRank_lines, xRank_copy_lines)
+            cur_line = modified_lines.pop()
             modified_lines = copy_line(xRank_lines, modified_lines)
+            modified_lines.append(cur_line)
             xRank_lines = []
             i += 1
             continue
@@ -100,11 +121,11 @@ def process_script_content(content):
             copy_start = True
             xLoop = xRank_type + 1
             loop_val = modified_lines.pop()
-            
+
             while xLoop > 1:
                 xRank_copy_lines.append(lines[i - xLoop])
                 xLoop -= 1
-                
+
             j = 1
             if2_order_type = 1
             while i + j < len(lines):
@@ -113,11 +134,11 @@ def process_script_content(content):
                 elif 'USE ORDER2' in upper_line: if2_order_type = 2; break
                 elif 'USE ORDER3' in upper_line: if2_order_type = 3; break
                 j += 1
-            
+
             if if2_order_type == 1: xRank_lines = xRank_template("xRank1", xRank_lines)
             elif if2_order_type == 2: xRank_lines = xRank_template("xRank2", xRank_lines)
             elif if2_order_type == 3: xRank_lines = xRank_template("xRank3", xRank_lines)
-            
+
             xRank_lines.append(loop_val)
             xRank_copy_lines = copy_line(xRank_lines, xRank_copy_lines)
             modified_lines = copy_line(xRank_lines, modified_lines)
@@ -130,20 +151,32 @@ def process_script_content(content):
             if 'USE ORDER1' in lines[i].upper(): order_type = "1"
             elif 'USE ORDER2' in lines[i].upper(): order_type = "2"
             elif 'USE ORDER3' in lines[i].upper(): order_type = "3"
-            
-            modified_lines = modified_lines[:-3]
+
+            # base 문항: slice "" 는 보존하고 그 뒤(categorical/중첩블록/USE ORDER) 제거
+            slice_idx = None
+            for k in range(len(modified_lines) - 1, -1, -1):
+                if modified_lines[k].strip() == 'slice ""':
+                    slice_idx = k
+                    break
+            if slice_idx is not None:
+                del modified_lines[slice_idx + 1:]
+            else:
+                if modified_lines and 'USE ORDER' in modified_lines[-1].upper():
+                    modified_lines.pop()
+                if modified_lines and 'categorical' in modified_lines[-1].lower():
+                    modified_lines.pop()
             xRank_copy_lines = xRank_copy_lines[:-3]
-            xRank_lines = xRank_template("order1", xRank_lines) # AutoQlib.py는 항상 order1 템플릿 사용
+            xRank_lines = xRank_template("order1", xRank_lines)
             xRank_copy_lines.append('        slice ""')
             xRank_copy_lines = copy_line(xRank_lines, xRank_copy_lines)
             xRank_copy_lines.pop()
             xRank_copy_lines.pop()
-            
+
             for linetmp in xRank_lines:
                 modified_lines.append(linetmp)
 
             modified_lines = change2_line('xRank', 'xRankxFin', xRank_copy_lines, modified_lines, xRank_type, order_type)
-            
+
             xRank_lines = []
             xRank_copy_lines = []
             xRank_type = 0
@@ -188,161 +221,203 @@ def process_script_content(content):
                 xRank_copy_lines.append(lines[i])
             i += 1
 
-    modified_lines = delete_line(modified_lines, '[metatype="dynamicgrid", answertype="text_text"')
+    modified_lines = delete_line_regex(
+        modified_lines,
+        r'\[[^\]]*metatype\s*=\s*"dynamicgrid"[^\]]*answertype\s*=\s*"text_text"[^\]]*')
+    modified_lines = delete_line_regex(
+        modified_lines,
+        r'\[[^\]]*answertype\s*=\s*"text_text"[^\]]*metatype\s*=\s*"dynamicgrid"[^\]]*')
     modified_lines = delete_line(modified_lines, '[BaseTitle="Base: Ask only if')
     modified_lines = [re.sub(r'xrank', '', item, flags=re.IGNORECASE) for item in modified_lines]
 
+    modified_lines = _collapse_consecutive_property_blocks(modified_lines)
+
     return '\n'.join(modified_lines)
 
-# Streamlit 페이지 로직 (AutoQlib.py의 파일 읽기 로직을 적용)
+
+def _find_property_blocks(lines):
+    blocks = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        s = lines[i].strip()
+        if s == '[' or (s.endswith('[') and 'metatype' not in s):
+            j = i + 1
+            while j < n and lines[j].strip() != ']':
+                j += 1
+            if j < n:
+                blocks.append((i, j))
+                i = j + 1
+                continue
+        i += 1
+    return blocks
+
+
+def _collapse_consecutive_property_blocks(lines):
+    blocks = _find_property_blocks(lines)
+    to_delete = []
+    for k in range(len(blocks) - 1):
+        e = blocks[k][1]
+        ns, ne = blocks[k + 1]
+        between = [lines[x].strip() for x in range(e + 1, ns)]
+        if all(b == '' for b in between):
+            body = " ".join(lines[ns:ne + 1])
+            prev_body = " ".join(lines[blocks[k][0]:e + 1])
+            if ('text_text' in body) or ('metatype = "dynamicgrid"' in body and 'metatype = "rowrank"' in prev_body):
+                to_delete.append((ns, ne))
+    for ns, ne in sorted(to_delete, reverse=True):
+        del lines[ns:ne + 1]
+    return lines
+
+
 def qlib_to_mdd_page():
     uploaded_file = st.file_uploader("Dimensions metadata txt 파일 업로드", type=["txt"])
-
     if uploaded_file is not None:
-        content_str = None # 최종적으로 처리할 문자열
-        file_name_for_display = uploaded_file.name # 사용자에게 보여줄 파일명
-
-        # --- AutoQlib.py와 동일한 다중 인코딩 시도 로직 적용 ---
+        content_str = None
         try:
             content_bytes = uploaded_file.getvalue()
-            
-            # AutoQlib.py에서 사용한 인코딩 목록
-            encodings_to_try = ['utf-8', 'utf-16', 'cp1252', 'latin1']
-            
-            for encoding in encodings_to_try:
+            for encoding in ['utf-8', 'utf-16', 'cp1252', 'latin1']:
                 try:
-                    # AutoQlib.py처럼 errors='replace' 없이 직접 디코딩 시도
                     content_str = content_bytes.decode(encoding)
                     st.success(f"파일을 '{encoding}' 인코딩으로 성공적으로 읽었습니다.")
-                    break # 성공하면 루프 종료
+                    break
                 except UnicodeDecodeError:
-                    # 해당 인코딩으로 디코딩 실패 시, 다음 인코딩 시도
                     continue
                 except Exception as e:
-                    # 기타 예상치 못한 오류 처리 (예: 파일 자체 손상 등)
                     st.error(f"파일을 '{encoding}'로 읽는 중 오류 발생: {str(e)}")
-                    # 오류 발생 시에도 다음 인코딩을 시도하도록 continue
                     continue
-            
-            # 모든 인코딩 시도 후에도 content_str이 None이면 오류 처리
             if content_str is None:
-                raise Exception("파일의 인코딩을 감지하거나 처리할 수 없습니다. 지원되는 인코딩이 아닐 수 있습니다.")
-
+                raise Exception("파일의 인코딩을 감지하거나 처리할 수 없습니다.")
         except Exception as e:
             st.error(f"파일을 읽는 중 오류가 발생했습니다: {str(e)}")
-            st.exception(e) # 상세 오류 정보 표시
-            return # 오류 발생 시 이후 로직 중단
-        # -----------------------------------------------------
+            st.exception(e)
+            return
 
         if st.button("변환", type="primary", use_container_width=True):
             with st.spinner("스크립트 변환 중..."):
                 try:
-                    # AutoQlib.py의 핵심 처리 로직 호출 (process_script_content 사용)
-                    result_content = process_script_content(content_str) 
-                    
+                    result_content = process_script_content(content_str)
                     st.success("변환이 완료되었습니다.")
-                    
-                    # 결과물 다운로드 버튼 (AutoQlib.py 처럼 '_변경.txt' 파일명 사용, UTF-8로 인코딩)
                     new_filename = f"{Path(uploaded_file.name).stem}_변경.txt"
                     st.download_button(
                         label="변환된 파일 다운로드",
-                        data=result_content.encode("utf-8"), # 다운로드 시에는 UTF-8로 인코딩
+                        data=result_content.encode("utf-8"),
                         file_name=new_filename,
                         mime="text/plain",
-                        use_container_width=True
-                    )
-                    
-                    # 미리보기 (선택 사항)
+                        use_container_width=True)
                     with st.expander("결과 미리보기"):
                         st.text_area("변환된 내용", result_content, height=400)
-                        st.caption("위 내용을 선택하여 복사하거나 아래 버튼을 참고하세요.")
-                        if st.button("복사 방법"):
-                            st.info("텍스트 영역을 클릭하고 `Ctrl+A`를 눌러 전체 선택 후 `Ctrl+C`로 복사하세요.")
-                        
                 except Exception as e:
                     st.error(f"변환 중 오류가 발생했습니다: {str(e)}")
                     st.exception(e)
 
+
 def modify_info_lines(modified_lines):
     for i in range(len(modified_lines)):
-        # print(modified_lines[i])
-        if 'xinfo "' in modified_lines[i] or 'XINFO "' in modified_lines[i] or 'xINFO "' in modified_lines[i] or 'xInfo "' in modified_lines[i]: # 대소문자 구분없이 체크크
-            # print(modified_lines[i])
-            # info " 뒤에 {#InfoboxCSS}<p> 추가 (이미 없을 경우)
+        if 'xinfo "' in modified_lines[i] or 'XINFO "' in modified_lines[i] or 'xINFO "' in modified_lines[i] or 'xInfo "' in modified_lines[i]:
             if '{#InfoboxCSS}<p>' not in modified_lines[i]:
-                # 공백 정규화 후 replace
                 modified_lines[i] = re.sub(r'INFO\s*"\s*', 'INFO "{#InfoboxCSS}<p>', modified_lines[i])
                 modified_lines[i] = re.sub(r'info\s*"\s*', 'info "{#InfoboxCSS}<p>', modified_lines[i])
                 modified_lines[i] = re.sub(r'Info\s*"\s*', 'Info "{#InfoboxCSS}<p>', modified_lines[i])
     return modified_lines
 
+
 def copy_line(source_list, target_list):
     target_list.extend(source_list)
     return target_list
 
-# 특정 구간을 수정하고 새로운 리스트로 반환하는 함수
+
+def _extract_brace_block(source_list, start_from=0):
+    """source_list에서 start_from 이후 첫 '{' 부터 짝이 맞는 '}' 까지의 구간
+    (start, end) 인덱스를 반환. 없으면 (None, None)."""
+    b_start = None
+    depth = 0
+    for k in range(start_from, len(source_list)):
+        s = source_list[k].strip()
+        if b_start is None:
+            if s == '{' or s.startswith('{'):
+                b_start = k
+                depth = source_list[k].count('{') - source_list[k].count('}')
+                if depth <= 0:
+                    return b_start, k
+            continue
+        depth += source_list[k].count('{') - source_list[k].count('}')
+        if depth <= 0:
+            return b_start, k
+    return b_start, None
+
+
 def change2_line(orgstr, chgstr, source_list, result_list, xRank_type, order_type):
-    start_idx = 0
-    end_idx = 0
-    #print("xtype : ", xRank_type)
-    
-    # 1. '['와 ']'의 인덱스를 찾아서 해당 구간을 제거
+    # source_list 형태(예):
+    # [var, <rowrank [ ] 표시 블록>, loop, {, ...카테고리..., }, ran/fields -, (, slice "", long, defaultanswer]
+    # 1) rowrank 표시 블록([ ... ]) 제거
+    start_idx = -1
+    end_idx = -1
     for i in range(len(source_list)):
         if '[' in source_list[i]:
-            start_idx = i - 1  # '[' 앞의 인덱스
-        elif ']' in source_list[i] and start_idx != -1:  # 첫 '[' 이후의 ']'만 인정
+            start_idx = i - 1
+        elif ']' in source_list[i] and start_idx != -1:
             end_idx = i
             break
-    
-    #print(start_idx, end_idx)
-    
-    # 2. 범위가 유효하면 해당 구간을 삭제
     if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-        for i in range(end_idx + 1, start_idx, -1):  # 뒤에서부터 삭제
+        for i in range(end_idx, start_idx, -1):
             source_list.pop(i)
-    
+
+    # 헤더(문항 변수/제목) = rowrank '[' 앞의 모든 라인. 멀티라인 제목도 보존.
+    header_end = start_idx if start_idx != -1 else 0
+    header_lines = source_list[:header_end + 1] if source_list else [""]
+
+    # 2) fincopy 헤더 (loop { use ORDERx } fields - ( slice "" categorical [1..1])
     source_list2 = []
     if order_type == "1":
-        source_list2 = xRank_template("fincopy1", source_list2)  # 'fincopy' 템플릿 추가
+        source_list2 = list(xRank_template("fincopy1", []))
     elif order_type == "2":
-        source_list2 = xRank_template("fincopy2", source_list2)  # 'fincopy' 템플릿 추가
+        source_list2 = list(xRank_template("fincopy2", []))
     elif order_type == "3":
-        source_list2 = xRank_template("fincopy3", source_list2)  # 'fincopy' 템플릿 추가
-    
-    source_list = source_list[:xRank_type] + source_list2 + source_list[xRank_type:]  # 템플릿을 삽입
-    source_list = source_list[:-6]  # 마지막 6개의 항목을 제거
-    source_list.append("            };")  # 추가 항목
-    source_list.append("        ) column expand;")  # 추가 항목
+        source_list2 = list(xRank_template("fincopy3", []))
 
-    # 수정된 내용을 결과 리스트에 추가
-    for linetmp in source_list:
+    # 3) 원본 top-loop 의 카테고리 { ... } 블록 추출 (헤더 이후부터 탐색)
+    b_start, b_end = _extract_brace_block(source_list, start_from=header_end + 1)
+
+    if b_start is not None and b_end is not None:
+        category_block = source_list[b_start:b_end + 1]
+        # fincopy 의 마지막 'categorical [1..1]' 뒤에 카테고리 블록을 붙이고 닫는다.
+        # 기존 [:-6] 방식은 원본 loop 키워드가 categorical 밑에 남아
+        # 'categorical [1..1]' 다음에 'loop' 가 오는 잘못된 문법을 만들었음.
+        new_list = header_lines + source_list2 + category_block + ["        ) column expand;"]
+    else:
+        # 카테고리 블록을 못 찾은 경우: 안전하게 기존 방식으로 폴백
+        insert_pos = start_idx + 1 if start_idx != -1 else 1
+        fallback = source_list[:insert_pos] + source_list2 + source_list[insert_pos:]
+        fallback = fallback[:-6]
+        fallback.append("            };")
+        fallback.append("        ) column expand;")
+        new_list = fallback
+
+    for linetmp in new_list:
         if 'xRank' in linetmp or 'XRANK' in linetmp or 'xRANK' in linetmp:
-            linetmp = linetmp.replace('xRank', 'xRankxFin')  # 'xRank'를 'xRankxFin'으로 변경
-            linetmp = linetmp.replace('xRANK', 'xRANKxFin')  # 'xRank'를 'xRankxFin'으로 변경
-            linetmp = linetmp.replace('XRANK', 'xRANKxFin')  # 'xRank'를 'xRankxFin'으로 변경
+            linetmp = linetmp.replace('xRank', 'xRankxFin')
+            linetmp = linetmp.replace('xRANK', 'xRANKxFin')
+            linetmp = linetmp.replace('XRANK', 'xRANKxFin')
         result_list.append(linetmp)
     return result_list
 
-# Streamlit 앱 실행 시 호출되는 부분 (예시)
-# if __name__ == "__main__":
-#     qlib_to_mdd_page()
 
-# info문항 끝에 </p> 추가 함수
 def fix_previous_lines(modified_lines):
     if modified_lines[-1] == "info;":
         last_index = len(modified_lines) - 2
         last_period_quote_index = modified_lines[last_index].rfind('."')
         if last_period_quote_index != -1:
             modified_lines[last_index] = modified_lines[last_index][:last_period_quote_index] + '.</p>"' + modified_lines[last_index][last_period_quote_index+2:]
-        
-    # for i in range(len(modified_lines)):
-    #     if 'info;' in modified_lines[i]:
-    #         last_period_quote_index = modified_lines[i-1].rfind('."')
-    #         if last_period_quote_index != -1:
-    #             modified_lines[i-1] = modified_lines[i-1][:last_period_quote_index] + '.</p>"' + modified_lines[i-1][last_period_quote_index+2:]
     return modified_lines
 
-# 리스트에서 특정 문자열이 포함된 라인을 삭제하는 함수
+
 def delete_line(lista, stringa):
     lista[:] = [line for line in lista if stringa not in line]
+    return lista
+
+
+def delete_line_regex(lista, pattern):
+    rx = re.compile(pattern)
+    lista[:] = [line for line in lista if not rx.search(line)]
     return lista
